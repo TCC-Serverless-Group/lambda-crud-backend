@@ -1,14 +1,30 @@
-<!--
-title: 'AWS Simple HTTP Endpoint example in NodeJS'
-description: 'This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.'
-layout: Doc
-framework: v4
-platform: AWS
-language: nodeJS
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, Inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+# lambda-crud-backend
+A backend project using serverless framework, Javascrip and AWS
+
+### To execute commands
+enter in todolist directory
+
+### To set up aws cli configuration
+
+https://docs.aws.amazon.com/pt_br/cli/latest/userguide/cli-chap-welcome.html
+
+### To setup serverless framework
+
+https://www.serverless.com/framework/docs/getting-started
+
+### To 
+
+### To deploy the project
+serverless deploy
+
+### To remove project from AWS
+serverless remove
+
+### To run project offline
+serverless offline
+
+### To log requests at AWS
+serverless logs -f <lambda_function> -t 
 
 # Serverless Framework Node HTTP API on AWS
 
