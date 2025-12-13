@@ -3,6 +3,7 @@ import { getTask } from './src/getTask.js';
 import { updateTask } from './src/updateTask.js';
 import { deleteTask } from './src/deleteTask.js';
 import { listTasks } from './src/listTask.js';
+import { validateSupabaseToken } from "./validateToken.js";
 
 export const handler = async (event) => {
   const headers = {
@@ -12,7 +13,9 @@ export const handler = async (event) => {
         'Content-Type': 'application/json'
     };
   try {
-    const { httpMethod, pathParameters, body } = event;
+    const { httpMethod, pathParameters, body , header} = event;
+
+    let user = validateSupabaseToken(header.token); // valida o token e retorna o payload do usuário, se válido
 
     switch (httpMethod) {
       case "OPTIONS":
