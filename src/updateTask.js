@@ -1,7 +1,7 @@
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "./db.js";
 
-export const updateTask = async (id, data) => {
+export const updateTask = async (id, data, userId) => {
   try {
     const updateExpression = [];
     const expressionAttributeValues = {};
@@ -14,7 +14,7 @@ export const updateTask = async (id, data) => {
     const result = await docClient.send(
       new UpdateCommand({
         TableName: process.env.DYNAMODB_TABLE,
-        Key: { id },
+        Key: { id, userId },
         UpdateExpression: `SET ${updateExpression.join(", ")}`,
         ExpressionAttributeValues: expressionAttributeValues,
         ReturnValues: "ALL_NEW"

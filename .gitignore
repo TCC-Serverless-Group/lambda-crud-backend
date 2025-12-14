@@ -1,3 +1,5 @@
 todolist/node_modules
 ./todolist/serverless/
 ./todolist/package-lock.json
+./node_modules
+./package-lock.json

@@ -1,12 +1,12 @@
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "./db.js";
 
-export const getTask = async (id) => {
+export const getTask = async (id, userId) => {
   try {
     const result = await docClient.send(
       new GetCommand({
         TableName: process.env.DYNAMODB_TABLE,
-        Key: { id }
+        Key: { id, userId }
       })
     );
     return {

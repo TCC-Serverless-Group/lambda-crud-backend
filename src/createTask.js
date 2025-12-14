@@ -3,11 +3,12 @@ import { docClient } from "./db.js";
 import { randomUUID } from 'crypto';
 
 
-export const createTask = async (data) => {
+export const createTask = async (data, userId) => {
   try {
     const task = {
       id: randomUUID(),
       ...data,
+      userId: userId,
       createdAt: new Date().toISOString()
     };
     await docClient.send(

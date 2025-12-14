@@ -1,12 +1,12 @@
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { docClient } from './db.js';
 
-export const deleteTask = async (id) => {
+export const deleteTask = async (id, userId) => {
   try {
     await docClient.send(
       new DeleteCommand({
         TableName: process.env.DYNAMODB_TABLE,
-        Key: { id }
+        Key: { id, userId }
       })
     );
     return {

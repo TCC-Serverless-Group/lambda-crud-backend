@@ -15,27 +15,27 @@ export const handler = async (event) => {
   try {
     const { httpMethod, pathParameters, body , header} = event;
 
-    let user = validateSupabaseToken(header.token); // valida o token e retorna o payload do usuário, se válido
+    let data = validateSupabaseToken(header.Token); // valida o token e retorna o payload do usuário, se válido
 
     switch (httpMethod) {
       case "OPTIONS":
         return { statusCode: 200, headers: headers, };
       case "POST":
-        return response(201, await createTask(JSON.parse(body)),headers);
+        return response(201, await createTask(JSON.parse(body), data.user.id),headers);
       case "GET":
         if (pathParameters?.id)
-          return response(200, await getTask(pathParameters.id),headers);
-        return response(200, await listTasks(),headers);
+          return response(200, await getTask(pathParameters.id, data.user.id),headers);
+        return response(200, await listTasks(data.user.id),headers);
 
       case "PUT":
         return response(
           200,
-          await updateTask(pathParameters.id, JSON.parse(body)),
+          await updateTask(pathParameters.id, JSON.parse(body), data.user.id),
           headers
         );
 
       case "DELETE":
-        return response(200, await deleteTask(pathParameters.id),headers);
+        return response(200, await deleteTask(pathParameters.id, data.user.id),headers);
 
       default:
         return response(400, { message: "Unsupported method" },headers);

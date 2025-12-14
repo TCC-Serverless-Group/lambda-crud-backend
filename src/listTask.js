@@ -1,10 +1,14 @@
 import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { docClient } from "./db.js";
 
-export const listTasks = async () => {
+export const listTasks = async (userId) => {
     try {
         const result = await docClient.send(
-          new ScanCommand({ TableName: process.env.DYNAMODB_TABLE })
+          new ScanCommand(
+            { TableName: process.env.DYNAMODB_TABLE,
+              Key: { userId }
+            }
+          )
         );
         return {
           statusCode: 200,
