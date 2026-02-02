@@ -9,8 +9,7 @@
   "author": "Pedro",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.908.0",
-    "@aws-sdk/lib-dynamodb": "^3.908.0",
+    "@supabase/supabase-js": "^2.93.3",
     "jsonwebtoken": "^9.0.3"
   }
 }

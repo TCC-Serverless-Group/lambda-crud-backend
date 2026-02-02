@@ -1,14 +1,15 @@
-import { GetCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient } from "./db.js";
+import { supabaseClient } from "./db.js";
 
 export const getTask = async (id, userId) => {
   try {
-    const result = await docClient.send(
-      new GetCommand({
-        TableName: process.env.DYNAMODB_TABLE,
-        Key: { id, userId }
-      })
-    );
+
+    const { data: result } = await supabaseClient
+    .from('tasks')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+    
     return {
       statusCode: 200,
       headers: {

@@ -1,5 +1,6 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { createClient } from '@supabase/supabase-js';
 
-const client = new DynamoDBClient({ region: process.env.AWS_REGION_DEFINED });
-export const docClient = DynamoDBDocumentClient.from(client);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+export const supabaseClient = createClient(supabaseUrl, supabaseKey);

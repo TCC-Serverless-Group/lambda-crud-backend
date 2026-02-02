@@ -1,14 +1,14 @@
-import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { docClient } from './db.js';
+import { supabaseClient } from "./db.js";
 
 export const deleteTask = async (id, userId) => {
   try {
-    await docClient.send(
-      new DeleteCommand({
-        TableName: process.env.DYNAMODB_TABLE,
-        Key: { id, userId }
-      })
-    );
+
+    await supabaseClient
+    .from('tasks')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+    
     return {
       statusCode: 200,
       headers: {

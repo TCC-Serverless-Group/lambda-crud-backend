@@ -1,5 +1,4 @@
-import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient } from "./db.js";
+import { supabaseClient } from "./db.js";
 
 export const updateTask = async (id, data, userId) => {
   try {
@@ -10,16 +9,12 @@ export const updateTask = async (id, data, userId) => {
       updateExpression.push(`${key} = :${key}`);
       expressionAttributeValues[`:${key}`] = value;
     });
-
-    const result = await docClient.send(
-      new UpdateCommand({
-        TableName: process.env.DYNAMODB_TABLE,
-        Key: { id, userId },
-        UpdateExpression: `SET ${updateExpression.join(", ")}`,
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: "ALL_NEW"
-      })
-    );
+    const { result } = await supabaseClient
+      .from('tasks')
+      .update({ descricao: data.descricao })
+      .eq('id', id)
+      .eq('user_id', userId);
+    
     return {
       statusCode: 200,
       headers: {

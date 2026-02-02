@@ -1,22 +1,17 @@
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient } from "./db.js";
-import { randomUUID } from 'crypto';
-
+import { supabaseClient } from "./db.js";
 
 export const createTask = async (data, userId) => {
   try {
     const task = {
-      id: randomUUID(),
-      ...data,
-      userId: userId,
-      createdAt: new Date().toISOString()
+      descricao: data.descricao,
+      userId: userId
     };
-    await docClient.send(
-      new PutCommand({
-        TableName: process.env.DYNAMODB_TABLE,
-        Item: task
-      })
-    );
+
+    await supabaseClient.from('tasks')
+    .insert( task )
+    .select()
+    .single();
+
     return {
       statusCode: 201,
       headers: {
