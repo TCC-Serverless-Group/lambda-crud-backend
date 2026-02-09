@@ -1,3 +1,4 @@
-./node_modules
-./package-lock.json
+package-lock.json
+.serverless/
+node_modules/
 .env
