@@ -13,6 +13,9 @@ provider:
   project: ${env:GCP_PROJECT_ID}
   credentials: ${env:GCP_CREDENTIALS}
 
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    
 plugins:
   - serverless-google-cloudfunctions
 

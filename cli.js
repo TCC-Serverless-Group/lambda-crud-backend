@@ -44,6 +44,23 @@ function backend() {
   run(`cd backend && npx serverless deploy`)
 }
 
+// Função para remover o backend do projeto
+function remove() {
+ console.log("\n Removendo backend (Serverless)...")
+  safeRun(`cd backend && npx serverless remove`)
+
+  console.log("\n  Removendo bucket (se existir)...")
+  safeRun(`gsutil rm -r gs://${config.bucket}`)
+
+  console.log("\n Limpando configurações locais...")
+  safeRun(`gcloud config unset project`)
+}
+// Função para executar comandos de forma segura, ignorando erros
+function purge() {
+  console.log("\n Removendo projeto (Serverless)...")
+  safeRun(`gsutil ls -b gs://${config.bucket} && gsutil rm -r gs://${config.bucket}`)
+}
+
 switch (command) {
   case "infra":
     infra()
@@ -59,13 +76,19 @@ switch (command) {
     frontend()
     backend()
     break
+  case "remove":
+    remove()
+    break
+  case "purge":
+    purge()
+    break
   default:
     console.log(`
-Comandos disponíveis:
+    Comandos disponíveis:
 
-node cli infra
-node cli frontend
-node cli backend
-node cli deploy
-`)
+    node cli infra
+    node cli frontend
+    node cli backend
+    node cli deploy
+    `)
 }
