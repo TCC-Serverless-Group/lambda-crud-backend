@@ -1,0 +1,15 @@
+{
+  "name": "todolist",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "handler.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "Pedro",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.93.3",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

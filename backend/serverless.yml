@@ -1,0 +1,43 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: pedrossdeveloper
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: todolist
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: todolist
+frameworkVersion: '3'
+
+provider:
+  name: google
+  runtime: nodejs20
+  region: us-central1
+  project: ${env:GCP_PROJECT_ID}
+  credentials: ${env:GCP_CREDENTIALS}
+
+plugins:
+  - serverless-google-cloudfunctions
+
+functions:
+  createTask:
+    handler: index.handler
+    events:
+      - http: path: tasks/save
+
+  listTasks:
+    handler: index.handler
+    events:
+      - http: path: tasks/list
+
+  getTask:
+    handler: index.handler
+    events:
+      - http: path: tasks/get
+
+  updateTask:
+    handler: index.handler
+    events:
+      - http: path: tasks/put/{id}
+
+  deleteTask:
+    handler: index.handler
+    events:
+      - http: path: tasks/delete/{id}
