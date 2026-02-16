@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from "child_process"
+import { clear } from "console"
 
 function run(cmd) {
   console.log(`\n ${cmd}`)
@@ -44,7 +45,7 @@ function backend() {
   run(`cd backend && npx serverless deploy`)
 }
 
-// Função para remover o backend do projeto
+// Função para remover os recursos do projeto
 function remove() {
  console.log("\n Removendo backend (Serverless)...")
   safeRun(`cd backend && npx serverless remove`)
@@ -59,6 +60,18 @@ function remove() {
 function purge() {
   console.log("\n Removendo projeto (Serverless)...")
   safeRun(`gsutil ls -b gs://${config.bucket} && gsutil rm -r gs://${config.bucket}`)
+}
+// Função para executar realizar limpeza de artefatos de build
+function clear() {
+  console.log("\n Limpando artefatos de build...")
+
+  safeRun(`rm -rf backend/.serverless`)
+  safeRun(`rm -rf backend/dist`)
+  safeRun(`rm -rf backend/.webpack`)
+  safeRun(`rm -rf frontend/build`)
+  safeRun(`rm -rf frontend/dist`)
+
+  console.log("\n Build limpo com sucesso.")
 }
 
 switch (command) {
@@ -81,6 +94,9 @@ switch (command) {
     break
   case "purge":
     purge()
+    break
+  case "clear":
+    clear()
     break
   default:
     console.log(`

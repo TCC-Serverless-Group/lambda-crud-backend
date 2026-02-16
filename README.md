@@ -14,6 +14,8 @@
 - node cli infra (apenas para infra do projeto)
 - node cli front (apenas para frontend do projeto)
 - node cli backend (apenas para backend do projeto)
-- node cli remove (para remover o projeto)
+- node cli remove (para remover os recursos do projeto)
+- node cli purge (para remover o projeto)
+- node cli clear (para limpar os artefatos do projeto)
 
 
