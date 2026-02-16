@@ -2,10 +2,19 @@
 
 import { execSync } from "child_process"
 import { clear } from "console"
+import fs from "fs"
+import path from "path"
 
 function run(cmd) {
   console.log(`\n ${cmd}`)
   execSync(cmd, { stdio: "inherit", shell: true })
+}
+
+function removeDir(dir) {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true })
+    console.log(`🗑️  Removido: ${dir}`)
+  }
 }
 
 const command = process.argv[2] || "help"
@@ -63,15 +72,15 @@ function purge() {
 }
 // Função para executar realizar limpeza de artefatos de build
 function clear() {
-  console.log("\n Limpando artefatos de build...")
+  console.log("\n🧹 Limpando artefatos de build...")
 
-  safeRun(`rm -rf backend/.serverless`)
-  safeRun(`rm -rf backend/dist`)
-  safeRun(`rm -rf backend/.webpack`)
-  safeRun(`rm -rf frontend/build`)
-  safeRun(`rm -rf frontend/dist`)
+  removeDir(path.resolve("backend/.serverless"))
+  removeDir(path.resolve("backend/dist"))
+  removeDir(path.resolve("backend/.webpack"))
+  removeDir(path.resolve("frontend/build"))
+  removeDir(path.resolve("frontend/dist"))
 
-  console.log("\n Build limpo com sucesso.")
+  console.log("\n✅ Build limpo com sucesso.")
 }
 
 switch (command) {
