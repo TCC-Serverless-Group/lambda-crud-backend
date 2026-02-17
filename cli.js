@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { execSync } from "child_process"
-import { clear } from "console"
 import fs from "fs"
 import path from "path"
 
@@ -21,13 +20,15 @@ const command = process.argv[2] || "help"
 
 // Configuração
 const config = {
-  projectId: process.env.GCP_PROJECT_ID,
+  projectId: process.env.GCP_PROJECT_ID || "projeto-gcp-id",
   region: process.env.GCP_REGION || "us-central1",
-  bucket: process.env.FRONTEND_BUCKET
+  bucket: process.env.FRONTEND_BUCKET || "bucket-frontend",
 }
 
 // verificando configurações obrigatórias
 if (!config.projectId || !config.bucket) {
+  console.error(`Propriedade projectId: ${config.projectId}`)
+  console.error(`Propriedade bucket: ${config.bucket}`)
   console.error(" Variáveis obrigatórias não definidas no .env")
   process.exit(1)
 }
@@ -71,7 +72,7 @@ function purge() {
   safeRun(`gsutil ls -b gs://${config.bucket} && gsutil rm -r gs://${config.bucket}`)
 }
 // Função para executar realizar limpeza de artefatos de build
-function clear() {
+function cls() {
   console.log("\n🧹 Limpando artefatos de build...")
 
   removeDir(path.resolve("backend/.serverless"))
@@ -104,8 +105,8 @@ switch (command) {
   case "purge":
     purge()
     break
-  case "clear":
-    clear()
+  case "cls":
+    cls()
     break
   default:
     console.log(`
@@ -115,5 +116,8 @@ switch (command) {
     node cli frontend
     node cli backend
     node cli deploy
+    node cli remove
+    node cli purge
+    node cli cls
     `)
 }
