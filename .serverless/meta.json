@@ -1,0 +1,27 @@
+{
+  "unknown": {
+    "versionFramework": "4.33.0",
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "command": [
+      "login"
+    ],
+    "options": {},
+    "orgId": "ed1284fd-9c1f-4a11-aa8e-14b18afa03b0",
+    "orgName": "pedrossdeveloper",
+    "userId": "NmqnK9fFL2rhX4LLQc",
+    "userName": "pedrossdeveloper",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
