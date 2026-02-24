@@ -12,7 +12,7 @@ function run(cmd) {
 function removeDir(dir) {
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true })
-    console.log(`🗑️  Removido: ${dir}`)
+    console.log(` Removido: ${dir}`)
   }
 }
 
@@ -44,15 +44,12 @@ function infra() {
 
 // Função para construir e implantar o frontend
 function frontend() {
-  run(`cd frontend && npm install`)
-  run(`cd frontend && npm run build`)
-  run(`gsutil -m rsync -r frontend/build gs://${config.bucket}`)
+  run(`cd frontend && npm install && npm run build && gsutil -m rsync -r frontend/build gs://${config.bucket}`)
 }
 
 // Função para implantar o backend
 function backend() {
-  run(`cd backend && npm install`)
-  run(`cd backend && npx serverless deploy`)
+  run(`cd backend && npm install && npx serverless deploy`)
 }
 
 // Função para remover os recursos do projeto
@@ -76,12 +73,14 @@ function cls() {
   console.log("\n🧹 Limpando artefatos de build...")
 
   removeDir(path.resolve("backend/.serverless"))
+  removeDir(path.resolve("backend/node_modules/"))
   removeDir(path.resolve("backend/dist"))
   removeDir(path.resolve("backend/.webpack"))
+  removeDir(path.resolve("frontend/node_modules/"))
   removeDir(path.resolve("frontend/build"))
   removeDir(path.resolve("frontend/dist"))
 
-  console.log("\n✅ Build limpo com sucesso.")
+  console.log("\n Build limpo com sucesso.")
 }
 
 switch (command) {

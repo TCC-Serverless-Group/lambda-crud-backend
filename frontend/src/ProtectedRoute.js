@@ -4,11 +4,9 @@ import authentication from './SupabaseAuth';
 function ProtectedRoute({ children }) {
   const user = authentication.getSession();
 
-  if (user.aud != 'authenticated') return <p>Carregando...</p>;
+  if (user.aud !== 'authenticated') return <Navigate to="/" replace />;
 
-  if (user.aud == 'authenticated') return <Navigate to="/" replace />;
-
-    console.log("ProtectedRoute: user =", user);
+  console.log("ProtectedRoute: user =", user);
 
   return children;
 

@@ -32,4 +32,6 @@ async function signOut() {
   return { error };
 }
 
-export default { signUp, signIn, signOut, getSession };
+const authentication = { signUp, signIn, signOut, getSession};
+
+export default authentication;
