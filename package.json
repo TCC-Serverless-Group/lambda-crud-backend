@@ -4,7 +4,9 @@
     "cli": "./cli.js"
   },
   "scripts": {
-    "deploy": "node cli deploy"
+    "test": "test",
+    "cli": "node cli.js",
+    "deploy:gcp": "node cli.js deploy"
   },
   "dependencies": {
     "dotenv": "^17.3.1",

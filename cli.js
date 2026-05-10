@@ -3,10 +3,21 @@
 import { execSync } from "child_process"
 import fs from "fs"
 import path from "path"
+import dotenv from "dotenv";
+
+dotenv.config();
 
 function run(cmd) {
   console.log(`\n ${cmd}`)
   execSync(cmd, { stdio: "inherit", shell: true })
+}
+
+function safeRun(cmd) {
+  try {
+    run(cmd)
+  } catch {
+    console.log(" Ignorando erro (provavelmente recurso inexistente)")
+  }
 }
 
 function removeDir(dir) {
@@ -44,7 +55,13 @@ function infra() {
 
 // Função para construir e implantar o frontend
 function frontend() {
-  run(`cd frontend && npm install && npm run build && gsutil -m rsync -r frontend/build gs://${config.bucket}`)
+  console.log("\n executou a install do frontend")
+  run(`cd frontend && npm install`)
+  console.log("\n executou o build do frontend")
+  run(`cd frontend && npm run build`)
+  console.log("\n executou o upload do frontend")
+  run(`gsutil -m rsync -r frontend/build gs://${config.bucket}`)
+  
 }
 
 // Função para implantar o backend
@@ -73,10 +90,8 @@ function cls() {
   console.log("\n🧹 Limpando artefatos de build...")
 
   removeDir(path.resolve("backend/.serverless"))
-  removeDir(path.resolve("backend/node_modules/"))
   removeDir(path.resolve("backend/dist"))
   removeDir(path.resolve("backend/.webpack"))
-  removeDir(path.resolve("frontend/node_modules/"))
   removeDir(path.resolve("frontend/build"))
   removeDir(path.resolve("frontend/dist"))
 
@@ -95,8 +110,8 @@ switch (command) {
     break
   case "deploy":
     infra()
-    frontend()
     backend()
+    frontend()
     break
   case "remove":
     remove()
