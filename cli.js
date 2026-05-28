@@ -31,7 +31,7 @@ const command = process.argv[2] || "help"
 
 // Configuração
 const config = {
-  projectId: process.env.GCP_PROJECT_ID || "projeto-gcp-id",
+  projectId: process.env.GCP_PROJECT_ID || "todolist-gcp-project",
   region: process.env.GCP_REGION || "us-central1",
   bucket: process.env.FRONTEND_BUCKET || "bucket-frontend",
 }
@@ -75,10 +75,10 @@ function remove() {
   safeRun(`cd backend && npx serverless remove`)
 
   console.log("\n  Removendo bucket (se existir)...")
-  safeRun(`gsutil rm -r gs://${config.bucket}`)
+  safeRun(`gsutil -m rm -r gs://${config.bucket}`)
 
-  console.log("\n Limpando configurações locais...")
-  safeRun(`gcloud config unset project`)
+  //console.log("\n Limpando configurações locais...")
+  //safeRun(`gcloud config unset project`)
 }
 // Função para executar comandos de forma segura, ignorando erros
 function purge() {

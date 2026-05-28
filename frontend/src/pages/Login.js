@@ -12,7 +12,12 @@ function Login() {
 
   function handleSignIn(e) {
     e.preventDefault();
-    authentication.signIn(email, password);
+    const result = authentication.signIn(email, password);
+    if (result.usuario) {
+      setUser(result.usuario);
+      navigate("/app", { replace: true });
+    }
+    console.error("Erro no login:", result.error);
   }
 
   function getFriendlyErrorMessage(error) {
@@ -21,12 +26,15 @@ function Login() {
   }
 
   useEffect(() => {
-    const  userAuth = authentication.getSession();
-    setUser(userAuth);
-    if (userAuth) {
-      navigate("/app");
+    async function checkSession() {
+      const  userAuth = authentication.getSession();
+      if (userAuth) {
+        setUser(userAuth);
+        navigate("/app", { replace: true });
+      }
     }
-  }, [user, navigate]);
+    checkSession();
+  }, [navigate]);
 
   return (
 
@@ -68,7 +76,7 @@ function Login() {
         Não tem conta?
         <button
           type="button"
-          onClick={() => navigate("/cadastro")}
+          onClick={() => navigate("/cadastro", { replace: true })}
           className="login-switch"
         >
           Cadastre-se

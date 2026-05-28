@@ -7,7 +7,7 @@ function Navbar() {
 
   const handleLogout = () => {
     authentication.signOut().then(() => console.log("Logout feito!"))
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   const showLogout = location.pathname === "/app";
