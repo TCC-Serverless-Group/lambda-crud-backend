@@ -9,8 +9,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState("");
-  //const { error } = authentication.getSession();
-
+  
   function handleSignIn(e) {
     e.preventDefault();
     const result = await authentication.signIn(email, password);
