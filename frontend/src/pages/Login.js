@@ -8,11 +8,19 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { error } = authentication.getSession();
+  const [loginError, setLoginError] = useState("");
+  //const { error } = authentication.getSession();
 
   function handleSignIn(e) {
     e.preventDefault();
-    authentication.signIn(email, password);
+    const result = await authentication.signIn(email, password);
+
+    if (result?.error) {
+      setLoginError(result.error.message);
+      return;
+    }
+
+    navigate("/app", { replace: true });
   }
 
   function getFriendlyErrorMessage(error) {
@@ -20,13 +28,17 @@ function Login() {
     return error.message;
   }
 
-  useEffect(() => {
-    const  userAuth = authentication.getSession();
-    setUser(userAuth);
+useEffect(() => {
+  async function checkSession() {
+    const userAuth = await authentication.getSession();
+
     if (userAuth) {
-      navigate("/app");
+      navigate("/app", { replace: true });
     }
-  }, [user, navigate]);
+  }
+
+  checkSession();
+}, [navigate]);
 
   return (
 

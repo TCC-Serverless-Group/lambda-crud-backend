@@ -6,14 +6,18 @@ function Cadastro() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { error } = authentication.signUp(email, password);
 
   function handleSubmit (e) {
     e.preventDefault();
-    authentication.signUp(email, password);
-    navigate("/");
-
+    setError("");
+    const result = authentication.signUp(email, password);
+    if (result.error) {
+      setError(result.error.message);
+      return;
+    }
+    navigate("/", { replace: true });
   };
 
   return (
