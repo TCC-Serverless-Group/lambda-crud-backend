@@ -12,7 +12,7 @@ function Login() {
   
   function handleSignIn(e) {
     e.preventDefault();
-    const result = await authentication.signIn(email, password);
+    const result = authentication.signIn(email, password);
 
     if (result?.error) {
       setLoginError(result.error.message);
