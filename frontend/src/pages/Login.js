@@ -7,19 +7,18 @@ function Login() {
   const [user, setUser] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [loginError, setLoginError] = useState("");
-  
+    
   function handleSignIn(e) {
     e.preventDefault();
     const result = authentication.signIn(email, password);
-
-    if (result?.error) {
-      setLoginError(result.error.message);
-      return;
-    }
-
-    navigate("/app", { replace: true });
+    if (result.usuario) {
+        setUser(result.usuario);
+        navigate("/app", { replace: true });
+      }
+      setError(result.error);
+      console.error("Erro no login:", result.error);
   }
 
   function getFriendlyErrorMessage(error) {
@@ -30,13 +29,12 @@ function Login() {
 useEffect(() => {
   async function checkSession() {
     const userAuth = await authentication.getSession();
-
     if (userAuth) {
-      navigate("/app", { replace: true });
+        setUser(userAuth);
+        navigate("/app", { replace: true });
+      }
     }
-  }
-
-  checkSession();
+    checkSession();
 }, [navigate]);
 
   return (
