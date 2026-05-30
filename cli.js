@@ -4,6 +4,9 @@ import { execSync } from "child_process"
 import fs from "fs"
 import path from "path"
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation"
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const region = process.env.AWS_REGION || "us-east-1"
 
