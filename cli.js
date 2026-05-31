@@ -31,9 +31,9 @@ const command = process.argv[2] || "help"
 
 // Configuração
 const config = {
-  projectId: process.env.GCP_PROJECT_ID || "todolist-gcp-project",
+  projectId: process.env.GCP_PROJECT_ID,
   region: process.env.GCP_REGION || "us-central1",
-  bucket: process.env.FRONTEND_BUCKET || "bucket-frontend",
+  bucket: process.env.FRONTEND_BUCKET,
 }
 
 // verificando configurações obrigatórias
@@ -45,7 +45,7 @@ if (!config.projectId || !config.bucket) {
 }
 
 // Função para configurar a infraestrutura
-function infra() {
+async function infra() {
   run(`gcloud config set project ${config.projectId}`)
   run(`gcloud services enable cloudfunctions.googleapis.com run.googleapis.com compute.googleapis.com cloudbuild.googleapis.com`)
   run(`gsutil mb -l ${config.region} gs://${config.bucket} || echo bucket exists`)
@@ -54,37 +54,30 @@ function infra() {
 }
 
 // Função para construir e implantar o frontend
-function frontend() {
+async function frontend() {
   console.log("\n executou a install do frontend")
   run(`cd frontend && npm install`)
   console.log("\n executou o build do frontend")
   run(`cd frontend && npm run build`)
   console.log("\n executou o upload do frontend")
-  run(`gsutil -m rsync -r frontend/build gs://${config.bucket}`)
+  run(`gcloud storage rsync frontend/build gs://${config.bucket} --recursive --delete-unmatched-destination-objects`)
   
 }
 
 // Função para implantar o backend
-function backend() {
+async function backend() {
   run(`cd backend && npm install && npx serverless deploy`)
 }
 
 // Função para remover os recursos do projeto
-function remove() {
+async function remove() {
  console.log("\n Removendo backend (Serverless)...")
   safeRun(`cd backend && npx serverless remove`)
 
   console.log("\n  Removendo bucket (se existir)...")
   safeRun(`gsutil -m rm -r gs://${config.bucket}`)
+}
 
-  //console.log("\n Limpando configurações locais...")
-  //safeRun(`gcloud config unset project`)
-}
-// Função para executar comandos de forma segura, ignorando erros
-function purge() {
-  console.log("\n Removendo projeto (Serverless)...")
-  safeRun(`gsutil ls -b gs://${config.bucket} && gsutil rm -r gs://${config.bucket}`)
-}
 // Função para executar realizar limpeza de artefatos de build
 function cls() {
   console.log("\n🧹 Limpando artefatos de build...")
@@ -98,26 +91,37 @@ function cls() {
   console.log("\n Build limpo com sucesso.")
 }
 
+// Função para executar realizar limpeza de bucket temporário
+function purge() {
+  safeRun(`gsutil rm -r gs://gcf-sources-167143243284-us-central1`)
+}
+
 switch (command) {
   case "infra":
-    infra()
+    await infra()
     break
   case "frontend":
-    frontend()
+    await frontend()
     break
   case "backend":
-    backend()
+    await backend()
     break
   case "deploy":
-    infra()
-    backend()
-    frontend()
+    try {
+      await infra()
+      await backend()
+      await frontend()
+      console.log("\n Projeto implantado com sucesso!")
+    } catch (err) {
+      console.error("Erro durante o deploy:", err)
+      process.exit(1)
+    }
     break
   case "remove":
-    remove()
+    await remove()
     break
   case "purge":
-    purge()
+    await purge()
     break
   case "cls":
     cls()

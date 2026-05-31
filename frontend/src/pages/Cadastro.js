@@ -54,7 +54,7 @@ function Cadastro() {
         Já tem conta?
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/app")}
           className="login-switch"
         >
           Acesse sua conta

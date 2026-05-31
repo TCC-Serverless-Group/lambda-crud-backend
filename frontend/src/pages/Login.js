@@ -8,16 +8,20 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { usuario, error } = authentication.getSession();
+  const [error, setError] = useState("");
 
-  function handleSignIn(e) {
+  async function handleSignIn(e) {
     e.preventDefault();
-    const result = authentication.signIn(email, password);
-    if (result.usuario) {
-      setUser(result.usuario);
-      navigate("/app", { replace: true });
+    const result = await authentication.signIn(email, password);
+
+    if(result.error) {
+      console.error("Erro no login:", result.error);
+      setError("Falha ao entrar. Verifique suas credenciais e tente novamente.");
+      return;
     }
-    console.error("Erro no login:", result.error);
+
+    setUser(result.user);
+    navigate("/app", { replace: true });
   }
 
   function getFriendlyErrorMessage(error) {
@@ -27,9 +31,9 @@ function Login() {
 
   useEffect(() => {
     async function checkSession() {
-      const  userAuth = authentication.getSession();
-      if (userAuth) {
-        setUser(userAuth);
+      const userAuth = await authentication.getSession();
+      if (userAuth?.session) {
+        setUser(userAuth.session.user);
         navigate("/app", { replace: true });
       }
     }

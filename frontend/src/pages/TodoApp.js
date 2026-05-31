@@ -13,17 +13,22 @@ function TodoApp () {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  const obterToken = () => authentication.getSession() ? authentication.getSession().session.access_token : '';
+  const obterToken = async () => {
+    const sessionData = await authentication.getSession();
+    return sessionData?.session?.access_token ?? '';
+  };
+
   // --- Função principal para carregar as atividades (GET) ---
   const fetchTasks = async () => {
     setIsLoading(true);
 
     try {
+      const token = await obterToken();
       const response = await fetch(BASE_ENDPOINT+"/list", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Token': obterToken()
+          'Token': token
         },
       });
 
@@ -56,11 +61,12 @@ function TodoApp () {
     const newTodo = { descricao: newTodoText.trim(), completed: false };
 
     try {
+      const token = await obterToken();
       const response = await fetch(BASE_ENDPOINT+"/save", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Token': obterToken()
+          'Token': token
         },
         body: JSON.stringify(newTodo),
       });
@@ -86,11 +92,12 @@ function TodoApp () {
     const updatedStatus = { completed: !currentCompleted };
 
     try {
+        const token = await obterToken();
         const response = await fetch(`${BASE_ENDPOINT}${"/put"}/${id}`, {
             method: 'PUT', // Ou 'PATCH'
             headers: {
                 'Content-Type': 'application/json',
-                'Token': obterToken()
+                'Token': token
             },
             body: JSON.stringify(updatedStatus),
         });
@@ -113,10 +120,11 @@ function TodoApp () {
   // 3. DELETE (Excluir)
   const deleteTodo = async (id) => {
     try {
+        const token = await obterToken();
         const response = await fetch(`${BASE_ENDPOINT}${"/delete"}/${id}`, {
             method: 'DELETE',
               headers: {
-                'Token': obterToken()
+                'Token': token
             },
         });
 
@@ -141,11 +149,12 @@ function TodoApp () {
     const updatedText = { text: editText.trim() };
 
     try {
+        const token = await obterToken();
         const response = await fetch(`${BASE_ENDPOINT}${"/put"}/${id}`, {
             method: 'PUT', 
             headers: {
                 'Content-Type': 'application/json',
-                'Token': obterToken()
+                'Token': token
             },
             body: JSON.stringify(updatedText),
         });

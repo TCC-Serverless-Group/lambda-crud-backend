@@ -1,7 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -19,15 +16,20 @@ async function signUp(email, password) {
 
 async function getSession() {
   const { data } = await supabase.auth.getSession();
-  return { data }; // data.session.access_token -> o que enviamos para o Lambda
+  return data; // { session, user }
 }
 
 async function signIn(email, password) {
-  const { user, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: email,
     password: password,
   });
-  return { user, error };
+  
+  return {
+    user: data?.user,
+    session: data?.session,
+    error,
+  };
 }
 
 async function signOut() {

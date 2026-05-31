@@ -5,8 +5,13 @@ function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    authentication.signOut().then(() => console.log("Logout feito!"))
+  const handleLogout = async () => {
+    let result = await authentication.signOut();
+    if (result.error) {
+      console.error("Erro ao deslogar:", result.error);
+      return;
+    }
+    console.log("Deslogado com sucesso.");
     navigate("/", { replace: true });
   };
 
