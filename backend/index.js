@@ -5,49 +5,59 @@ import { deleteTask } from './src/deleteTask.js';
 import { listTasks } from './src/listTask.js';
 import { validateSupabaseToken } from "./validateToken.js";
 
-export const handler = async (event) => {
-  const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-        'Access-Control-Allow-Methods': 'DELETE,GET,HEAD,OPTIONS,POST,PUT',
-        'Content-Type': 'application/json'
-    };
+function applyCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Token');
+}
+
+export const handler = async (req, res) => {
+
+  applyCorsHeaders(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  const token = String(req.headers.token);
+  
   try {
-    const { httpMethod, pathParameters, body , header} = event;
+    
+    let data = validateSupabaseToken(token); // valida o token e retorna o payload do usuário, se válido
+    const userId = data?.user?.id;
 
-    let data = validateSupabaseToken(header.Token); // valida o token e retorna o payload do usuário, se válido
+    const path = req.path;
 
-    switch (httpMethod) {
-      case "OPTIONS":
-        return { statusCode: 200, headers: headers, };
-      case "POST":
-        return response(201, await createTask(JSON.parse(body), data.user.id),headers);
-      case "GET":
-        if (pathParameters?.id)
-          return response(200, await getTask(pathParameters.id, data.user.id),headers);
-        return response(200, await listTasks(data.user.id),headers);
-
-      case "PUT":
-        return response(
-          200,
-          await updateTask(pathParameters.id, JSON.parse(body), data.user.id),
-          headers
-        );
-
-      case "DELETE":
-        return response(200, await deleteTask(pathParameters.id, data.user.id),headers);
-
-      default:
-        return response(400, { message: "Unsupported method" },headers);
+    if (req.method === "POST" && path === "/tasks/save") {
+      return res.status(201).json(await createTask(req.body, userId));
     }
+
+    if (req.method === "GET" && path === "/tasks/list") {
+      return res.status(200).json(await listTasks(userId));
+    }
+
+    if (req.method === "GET" && path.startsWith("/tasks/get/")) {
+      const id = path.split("/").pop();
+      return res.status(200).json(await getTask(id, userId));
+    }
+
+    if (req.method === "PUT" && path.startsWith("/tasks/put/")) {
+      const id = path.split("/").pop();
+      return res.status(204).json(await updateTask(id, req.body, userId));
+    }
+
+    if (req.method === "DELETE" && path.startsWith("/tasks/delete/")) {
+      const id = path.split("/").pop();
+      return res.status(204).json(await deleteTask(id, userId));
+    }
+
+    return res.status(404).json({ message: "Rota não encontrada" });
   } catch (err) {
+    applyCorsHeaders(res);
     console.error(err);
-    return response(500, { message: "Internal server error", error: err.message },headers);
+    return res.status(500).json({
+      message: err.message,
+      stack: err.stack,
+    });
   }
 };
-
-const response = (statusCode, body,headers) => ({
-  statusCode,
-  headers: headers,
-  body: JSON.stringify(body)
-});

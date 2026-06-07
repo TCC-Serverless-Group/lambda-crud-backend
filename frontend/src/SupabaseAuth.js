@@ -16,7 +16,7 @@ async function signUp(email, password) {
 
 async function getSession() {
   const { data } = await supabase.auth.getSession();
-  return data; // { session, user }
+  return  data ; // { session, user }
 }
 
 async function signIn(email, password) {

@@ -46,11 +46,11 @@ if (!config.projectId || !config.bucket) {
 
 // Função para configurar a infraestrutura
 async function infra() {
-  run(`gcloud config set project ${config.projectId}`)
-  run(`gcloud services enable cloudfunctions.googleapis.com run.googleapis.com compute.googleapis.com cloudbuild.googleapis.com`)
-  run(`gsutil mb -l ${config.region} gs://${config.bucket} || echo bucket exists`)
-  run(`gsutil web set -m index.html -e index.html gs://${config.bucket}`)
-  run(`gsutil iam ch allUsers:objectViewer gs://${config.bucket}`)
+  safeRun(`gcloud config set project ${config.projectId}`)
+  safeRun(`gcloud services enable cloudfunctions.googleapis.com run.googleapis.com compute.googleapis.com cloudbuild.googleapis.com`)
+  safeRun(`gcloud storage buckets create gs://${config.bucket} --location=${config.region}`)
+  safeRun(`gcloud storage buckets update gs://${config.bucket} --web-main-page-suffix=index.html`)
+  safeRun(`gcloud storage buckets add-iam-policy-binding gs://${config.bucket} --member=allUsers --role=roles/storage.objectViewer`)
 }
 
 // Função para construir e implantar o frontend
@@ -66,7 +66,9 @@ async function frontend() {
 
 // Função para implantar o backend
 async function backend() {
+  await infra()
   run(`cd backend && npm install && npx serverless deploy`)
+  safeRun(`gcloud functions add-iam-policy-binding todolist-dev-api --region=${config.region} --member="allUsers" --role="roles/cloudfunctions.invoker"`) 
 }
 
 // Função para remover os recursos do projeto
@@ -75,7 +77,9 @@ async function remove() {
   safeRun(`cd backend && npx serverless remove`)
 
   console.log("\n  Removendo bucket (se existir)...")
-  safeRun(`gsutil -m rm -r gs://${config.bucket}`)
+  safeRun(`gcloud storage rm gs://${config.bucket} --recursive`)  
+  safeRun(`gcloud storage buckets delete gs://${config.bucket}`)
+  console.log("\n  Aguarde alguns instantes antes de provisionar novamente, para garantir que os recursos sejam completamente removidos.")
 }
 
 // Função para executar realizar limpeza de artefatos de build
@@ -84,17 +88,14 @@ function cls() {
 
   removeDir(path.resolve("backend/.serverless"))
   removeDir(path.resolve("backend/dist"))
-  removeDir(path.resolve("backend/.webpack"))
+  removeDir(path.resolve("backend/node_modules"))
+  //removeDir(path.resolve("backend/.webpack"))
   removeDir(path.resolve("frontend/build"))
   removeDir(path.resolve("frontend/dist"))
 
   console.log("\n Build limpo com sucesso.")
 }
 
-// Função para executar realizar limpeza de bucket temporário
-function purge() {
-  safeRun(`gsutil rm -r gs://gcf-sources-167143243284-us-central1`)
-}
 
 switch (command) {
   case "infra":
@@ -119,9 +120,6 @@ switch (command) {
     break
   case "remove":
     await remove()
-    break
-  case "purge":
-    await purge()
     break
   case "cls":
     cls()

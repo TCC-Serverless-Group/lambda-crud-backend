@@ -11,32 +11,13 @@ provider:
     DATABASE_URL: ${env:DATABASE_URL}
     SUPABASE_URL: ${env:SUPABASE_URL}
     SUPABASE_ANON_KEY: ${env:SUPABASE_ANON_KEY}
+    SUPABASE_JWT_SECRET: ${env:SUPABASE_JWT_SECRET}
     
 plugins:
   - serverless-google-cloudfunctions
 
 functions:
-  createTask:
+  api:
     handler: handler
     events:
-      - http: tasks/save
-
-  listTasks:
-    handler: handler
-    events:
-      - http: tasks/list
-
-  getTask:
-    handler: handler
-    events:
-      - http: tasks/get
-
-  updateTask:
-    handler: handler
-    events:
-      - http: tasks/put/{id}
-
-  deleteTask:
-    handler: handler
-    events:
-      - http: tasks/delete/{id}
+      - http: api
