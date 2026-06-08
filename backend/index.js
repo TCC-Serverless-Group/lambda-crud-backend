@@ -3,51 +3,39 @@ import { getTask } from './src/getTask.js';
 import { updateTask } from './src/updateTask.js';
 import { deleteTask } from './src/deleteTask.js';
 import { listTasks } from './src/listTask.js';
+import { route } from './router.js';
 import { validateSupabaseToken } from "./validateToken.js";
 
-export const handler = async (event) => {
-  const headers = {
+function applyCorsHeaders() {
+  return headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
         'Access-Control-Allow-Methods': 'DELETE,GET,HEAD,OPTIONS,POST,PUT',
         'Content-Type': 'application/json'
     };
-  try {
-    const { httpMethod, pathParameters, body , header} = event;
+}
 
-    let data = validateSupabaseToken(header.Token); // valida o token e retorna o payload do usuário, se válido
+export const handler = async (event) => {
+    const headers = applyCorsHeaders();
 
-    switch (httpMethod) {
-      case "OPTIONS":
-        return { statusCode: 200, headers: headers, };
-      case "POST":
-        return response(201, await createTask(JSON.parse(body), data.user.id),headers);
-      case "GET":
-        if (pathParameters?.id)
-          return response(200, await getTask(pathParameters.id, data.user.id),headers);
-        return response(200, await listTasks(data.user.id),headers);
-
-      case "PUT":
-        return response(
-          200,
-          await updateTask(pathParameters.id, JSON.parse(body), data.user.id),
-          headers
-        );
-
-      case "DELETE":
-        return response(200, await deleteTask(pathParameters.id, data.user.id),headers);
-
-      default:
-        return response(400, { message: "Unsupported method" },headers);
+    const { httpMethod, pathParameters, body , header, path } = event;
+    
+    if (httpMethod === "OPTIONS") {
+      return { statusCode: 204, headers: headers, body: ""};
     }
-  } catch (err) {
-    console.error(err);
-    return response(500, { message: "Internal server error", error: err.message },headers);
-  }
-};
 
-const response = (statusCode, body,headers) => ({
-  statusCode,
-  headers: headers,
-  body: JSON.stringify(body)
-});
+    let data = validateSupabaseToken(header.token);
+    const result = await route({
+        method: event.httpMethod,
+        path: event.path,
+        body: event.body ? JSON.parse(event.body) : {},
+        headers,
+        userId: auth.user.id,
+      });
+
+      return {
+        statusCode: result.statusCode,
+        headers: headers,
+        body: JSON.stringify(result.body),
+      };
+    };

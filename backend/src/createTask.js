@@ -1,34 +1,24 @@
 import { supabaseClient } from "./db.js";
 
-export const createTask = async (data, userId) => {
+export async function createTask(payload, userId) {
   try {
     const task = {
-      descricao: data.descricao,
-      userId: userId
+      id_usuario: userId,
+      descricao: payload.descricao,
+      completo: payload.completo ?? false
     };
-
-    await supabaseClient.from('tasks')
+  
+    const { data, error } = await supabaseClient
+    .from('tasks')
     .insert( task )
     .select()
     .single();
-
-    return {
-      statusCode: 201,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type,Authorization"
-      },
-      body: JSON.stringify(task)
-    };
+    
+    if (error) {
+      throw new Error(`Erro interno ao criar task ${error.message}`);
+    }
+    return data;
   } catch (error) {
-    console.error("Erro ao cadastrar task:", error);
-    return {
-      statusCode: 500,
-      headers: {
-        "Access-Control-Allow-Origin": "*"
-      },
-      body: JSON.stringify({ error: "Erro interno ao cadastrar tasks" })
-    };
+    throw new Error(`Erro interno ao criar task ${error.message}`);
   }
 };
