@@ -7,18 +7,21 @@ function Login() {
   const [user, setUser] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-    
-  function handleSignIn(e) {
+  const [error, setError] = useState("");
+
+  async function handleSignIn(e) {
     e.preventDefault();
-    const result = authentication.signIn(email, password);
-    if (result.usuario) {
-        setUser(result.usuario);
-        navigate("/app", { replace: true });
-      }
-      setError(result.error);
+    const result = await authentication.signIn(email, password);
+
+    if(result.error) {
       console.error("Erro no login:", result.error);
+      setError("Falha ao entrar. Verifique suas credenciais e tente novamente.");
+      return;
+    }
+
+    setUser(result.user);
+    navigate("/app", { replace: true });
   }
 
   function getFriendlyErrorMessage(error) {
@@ -26,16 +29,16 @@ function Login() {
     return error.message;
   }
 
-useEffect(() => {
-  async function checkSession() {
-    const userAuth = await authentication.getSession();
-    if (userAuth) {
-        setUser(userAuth);
+  useEffect(() => {
+    async function checkSession() {
+      const userAuth = await authentication.getSession();
+      if (userAuth?.session) {
+        setUser(userAuth.session.user);
         navigate("/app", { replace: true });
       }
     }
     checkSession();
-}, [navigate]);
+  }, [navigate]);
 
   return (
 
@@ -77,7 +80,7 @@ useEffect(() => {
         Não tem conta?
         <button
           type="button"
-          onClick={() => navigate("/cadastro")}
+          onClick={() => navigate("/cadastro", { replace: true })}
           className="login-switch"
         >
           Cadastre-se

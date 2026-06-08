@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import authentication from '../SupabaseAuth';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-const BASE_ENDPOINT = API_BASE_URL+"/tasks";
+let API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+let BASE_ENDPOINT = API_BASE_URL+"/tasks";
 
 function TodoApp () {
   // --- Estados ---
@@ -13,39 +13,43 @@ function TodoApp () {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  const obterToken = () => authentication.getSession() ? authentication.getSession().session.access_token : '';
+  const obterToken = async () => {
+    console.log("Obtendo token de autenticação...");
+    const sessionData = await authentication.getSession();
+    return sessionData?.session?.access_token ?? '';
+  };
+
   // --- Função principal para carregar as atividades (GET) ---
   const fetchTasks = async () => {
     setIsLoading(true);
 
     try {
+      const token = await obterToken();
+      
       const response = await fetch(BASE_ENDPOINT+"/list", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Token': obterToken()
+          'Token': token
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status}: Falha ao buscar atividades`);
-      }
-
       const data = await response.json();
-      setTasks(JSON.parse(data.body)); 
+      console.log("Resposta do servidor:", JSON.stringify(data));
+      setTasks(Array.isArray(data) ? data : []); 
 
     } catch (error) {
       console.error("Erro ao carregar To-Dos:", error);
     } finally {
       setIsLoading(false);
-      setTasks([]); // Limpa a lista em caso de erro para evitar exibir dados antigos
     }
   };
 
   // Carrega a lista ao iniciar o componente
   useEffect(() => {
+    console.log("Componente TodoApp montado. Carregando atividades...");
     fetchTasks();
-  });
+  }, []);
 
   // --- Funções de Manipulação (CRUD) ---
 
@@ -54,27 +58,24 @@ function TodoApp () {
     e.preventDefault();
     if (!newTodoText.trim()) return;
 
-    const newTodo = { descricao: newTodoText.trim(), completed: false };
+    const newTodo = { descricao: newTodoText.trim(), completo: false };
 
     try {
+      const token = await obterToken();
+      console.log("Enviando nova atividade para o backend:", newTodo);
       const response = await fetch(BASE_ENDPOINT+"/save", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Token': obterToken()
+          'Token': token
         },
         body: JSON.stringify(newTodo),
       });
 
-      if (!response.ok) {
-        throw new Error('Falha ao adicionar atividade.');
-      }
-
+      console.log("Resposta do servidor após POST:", JSON.stringify(response));
       const addedTodo = await response.json();
-      const parsedBody = typeof addedTodo.body === 'string'
-      ? JSON.parse(addedTodo.body)
-      : addedTodo.body;
-      setTasks([...tasks, parsedBody]); 
+    
+      setTasks((tasks) => [...tasks, addedTodo]);
       setNewTodoText('');
 
     } catch (error) {
@@ -84,26 +85,23 @@ function TodoApp () {
 
   // 2. PUT/PATCH (Marcar como Feito)
   const toggleComplete = async (id, currentCompleted) => {
-    const updatedStatus = { completed: !currentCompleted };
+    const updatedStatus = { completo: !currentCompleted };
 
     try {
+        const token = await obterToken();
         const response = await fetch(`${BASE_ENDPOINT}${"/put"}/${id}`, {
             method: 'PUT', // Ou 'PATCH'
             headers: {
                 'Content-Type': 'application/json',
-                'Token': obterToken()
+                'Token': token
             },
             body: JSON.stringify(updatedStatus),
         });
 
-        if (!response.ok) {
-            throw new Error('Falha ao atualizar o status.');
-        }
-
         // Atualiza o estado local após sucesso
         setTasks(
             tasks.map((todo) =>
-                todo.id === id ? { ...todo, completed: !currentCompleted } : todo
+                todo.id === id ? { ...todo, completo: !currentCompleted } : todo
             )
         );
     } catch (error) {
@@ -114,16 +112,13 @@ function TodoApp () {
   // 3. DELETE (Excluir)
   const deleteTodo = async (id) => {
     try {
+        const token = await obterToken();
         const response = await fetch(`${BASE_ENDPOINT}${"/delete"}/${id}`, {
             method: 'DELETE',
               headers: {
-                'Token': obterToken()
+                'Token': token
             },
         });
-
-        if (!response.ok) {
-            throw new Error('Falha ao excluir atividade.');
-        }
 
         // Atualiza o estado local após sucesso
         setTasks(tasks.filter((todo) => todo.id !== id));
@@ -133,32 +128,26 @@ function TodoApp () {
   };
 
   // 4. PUT/PATCH (Salvar Edição)
-  const saveEdit = async (id) => {
-    if (!editText.trim()) {
-      deleteTodo(id); 
-      return;
-    }
+  const saveEdit = async (id, editText) => {
 
-    const updatedText = { text: editText.trim() };
-
+    const updatedText = { descricao: editText };
     try {
+        const token = await obterToken();
         const response = await fetch(`${BASE_ENDPOINT}${"/put"}/${id}`, {
             method: 'PUT', 
             headers: {
                 'Content-Type': 'application/json',
-                'Token': obterToken()
+                'Token': token
             },
             body: JSON.stringify(updatedText),
         });
 
-        if (!response.ok) {
-            throw new Error('Falha ao salvar edição.');
-        }
+        console.log("Resposta do servidor após PUT (edit):", JSON.stringify(response));
 
         // Atualiza o estado local após sucesso
         setTasks(
             tasks.map((todo) =>
-                todo.id === id ? { ...todo, text: editText.trim() } : todo
+                todo.id === id ? { ...todo, descricao: editText } : todo
             )
         );
         setEditingId(null);
@@ -172,7 +161,7 @@ function TodoApp () {
   // Funções de UI (startEdit e filteredTasks permanecem como antes)
   const startEdit = (todo) => {
     setEditingId(todo.id);
-    setEditText(todo.text);
+    setEditText(todo.descricao);
   };
 
   const filteredTasks = useMemo(() => {
@@ -180,9 +169,9 @@ function TodoApp () {
       return tasks;
     }
     const lowerCaseSearch = searchTerm.toLowerCase().trim();
-    return tasks.filter((todo) =>
-      todo.text.toLowerCase().includes(lowerCaseSearch)
-    );
+    return tasks.length > 0 ? tasks.filter((todo) =>
+      todo.descricao.toLowerCase().includes(lowerCaseSearch)
+    ) : [];
   }, [tasks, searchTerm]);
 
   // --- Componente UI (Renderização) ---
@@ -222,12 +211,12 @@ function TodoApp () {
             filteredTasks.map((todo) => (
               <li
                 key={todo.id}
-                className={`todo-item ${todo.completed ? 'completed' : ''}`}
+                className={`todo-item ${todo.completo ? 'completo' : ''}`}
               >
                 <input
                   type="checkbox"
-                  checked={todo.completed}
-                  onChange={() => toggleComplete(todo.id, todo.completed)} 
+                  checked={todo.completo}
+                  onChange={() => toggleComplete(todo.id, todo.completo)} 
                 />
 
                 {editingId === todo.id ? (
@@ -237,7 +226,7 @@ function TodoApp () {
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
                         />
-                        <button className="save-btn" onClick={() => saveEdit(todo.id)}>
+                        <button className="save-btn" onClick={() => saveEdit(todo.id, editText)}>
                             Salvar
                         </button>
                         <button className="cancel-btn" onClick={() => setEditingId(null)}>

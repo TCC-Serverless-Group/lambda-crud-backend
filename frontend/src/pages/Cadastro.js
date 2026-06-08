@@ -17,7 +17,7 @@ function Cadastro() {
       setError(result.error.message);
       return;
     }
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   return (
@@ -54,7 +54,7 @@ function Cadastro() {
         Já tem conta?
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/app", { replace: true })}
           className="login-switch"
         >
           Acesse sua conta

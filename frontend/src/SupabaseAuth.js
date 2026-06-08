@@ -3,14 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-if (!supabaseAnonKey) {
-  throw new Error("REACT_APP_SUPABASE_ANON_KEY não definida no build.")
-}
-
-if (!supabaseUrl) {
-  throw new Error("REACT_APP_SUPABASE_URL não definida no build.")
-}
-
 export const supabase = createClient(supabaseUrl,supabaseAnonKey);
 
 
@@ -24,15 +16,20 @@ async function signUp(email, password) {
 
 async function getSession() {
   const { data } = await supabase.auth.getSession();
-  return { data }; // data.session.access_token -> o que enviamos para o Lambda
+  return  data ; // { session, user }
 }
 
 async function signIn(email, password) {
-  const { user, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: email,
     password: password,
   });
-  return { user, error };
+  
+  return {
+    user: data?.user,
+    session: data?.session,
+    error,
+  };
 }
 
 async function signOut() {
