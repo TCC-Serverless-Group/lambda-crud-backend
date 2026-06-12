@@ -1,11 +1,12 @@
 CREATE TABLE tasks (
   id serial PRIMARY KEY,
-  user_id uuid NOT NULL,
+  id_usuario uuid NOT NULL,
   descricao VARCHAR(200) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  completo BOOLEAN DEFAULT FALSE,
+  criada TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE tasks
-ADD CONSTRAINT user_id
-FOREIGN KEY (user_id)
+ADD CONSTRAINT id_usuario
+FOREIGN KEY (id_usuario)
 REFERENCES auth.users (id);

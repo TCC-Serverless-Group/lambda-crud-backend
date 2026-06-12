@@ -32,6 +32,7 @@ provider:
         - X-Amz-Date
         - X-Api-Key
         - X-Amz-Security-Token
+        - Token
       allowCredentials: false
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
@@ -51,6 +52,7 @@ functions:
               - X-Amz-Date
               - X-Api-Key
               - X-Amz-Security-Token
+              - Token
           integration: lambda-proxy
           
   listTasks:
@@ -67,13 +69,14 @@ functions:
               - X-Amz-Date
               - X-Api-Key
               - X-Amz-Security-Token
+              - Token
           integration: lambda-proxy
           
   getTask:
     handler: index.handler
     events:
       - http:
-          path: tasks/get
+          path: tasks/get/{id}
           method: get
           cors:
             origin: "*"
@@ -83,6 +86,7 @@ functions:
               - X-Amz-Date
               - X-Api-Key
               - X-Amz-Security-Token
+              - Token
           integration: lambda-proxy
           
   updateTask:
@@ -99,6 +103,7 @@ functions:
               - X-Amz-Date
               - X-Api-Key
               - X-Amz-Security-Token
+              - Token
           integration: lambda-proxy
           
   deleteTask:
@@ -115,6 +120,7 @@ functions:
               - X-Amz-Date
               - X-Api-Key
               - X-Amz-Security-Token
+              - Token
           integration: lambda-proxy
           
 # Resources: DynamoDB table, S3 bucket and CloudFront
@@ -201,6 +207,14 @@ resources:
             ErrorCachingMinTTL: 0
 
   Outputs:
+    CloudFrontUrl:
+      Value:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - !GetAtt CloudFrontDistribution.DomainName
+      Export:
+        Name: CloudFrontUrl
     ApiUrl:
       Description: "API endpoint (REST API)"
       Value:

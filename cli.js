@@ -8,22 +8,17 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const region = process.env.AWS_REGION || "us-east-1"
-
-const cloudformation = new CloudFormationClient({ region })
+const cloudformation = new CloudFormationClient({ region: process.env.AWS_REGION })
 
 async function getStackOutputs() {
-  const service = "todolist"
-  const stage = "dev"
-  const stackName = `${service}-${stage}`
 
  const response = await cloudformation.send(
-    new DescribeStacksCommand({ StackName: stackName })
+    new DescribeStacksCommand({ StackName: "todolist-dev" })
   )
 
   const outputsArray = response.Stacks?.[0]?.Outputs || []
 
-  const outputs = {}
+  let outputs = {}
   for (const item of outputsArray) {
     outputs[item.OutputKey] = item.OutputValue
   }
@@ -73,18 +68,25 @@ function ensureFrontendEnv(apiUrl) {
 
   fs.writeFileSync(
     "frontend/.env",
-    `REACT_APP_API_URL=${apiUrl}\nREACT_APP_SUPABASE_URL=${envFrontendContent[0]}\nREACT_APP_SUPABASE_ANON_KEY=${envFrontendContent[1]}\n`
+    `REACT_APP_API_BASE_URL=${apiUrl}\nREACT_APP_SUPABASE_URL=${envFrontendContent[0]}\nREACT_APP_SUPABASE_ANON_KEY=${envFrontendContent[1]}\n`
   )
 }
 
 function readEnvFile() {
-  const envValues = fs.readFileSync("frontend/.env_backup", 'utf8')
+  const envValues = fs.readFileSync("frontend/.env", 'utf8')
   .split("\n")
   .filter(line => line.startsWith("REACT_APP_SUPABASE_"))
   .map(line => line.split("=")[1])
   console.log(`### valores encontrados: ${envValues[0]} e ${envValues[1]} ###`)
   return envValues;
 }
+
+// function cloudFrontUrl() {
+//   let outputs = await getStackOutputs();
+//   const cloudFrontUrl = outputs.find(o => o.OutputKey === "CloudFrontUrl")?.OutputValue;
+
+//   console.log("Frontend:", cloudFrontUrl);
+// }
 
 async function backAndFront() {
  
@@ -105,7 +107,9 @@ async function backAndFront() {
   console.log(`\n Enviando build para bucket: ${bucketName}`)
   run(`cd frontend && npm install && npm run build && aws s3 sync build/ s3://${bucketName} --delete`)
 
-  console.log("### invalidando distribuição CloudFront ###")
+  console.log("\n Deploy completo! Acessar a URL do CloudFront para ver a aplicação.")
+  console.log(`URL do CloudFront: ${outputs.CloudFrontUrl}`)
+  console.log("### invalidando distribuição CloudFront anterior ###")
   run(
   `cd frontend && aws cloudfront create-invalidation --distribution-id ${distributionId} --paths "/*"`
   )

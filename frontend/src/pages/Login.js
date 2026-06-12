@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import authentication from '../SupabaseAuth';
 
 function Login() {
+  console.log("Login renderizou");
 
   const [user, setUser] = useState("");
   const [email, setEmail] = useState("");
@@ -20,25 +21,29 @@ function Login() {
       return;
     }
 
-    setUser(result.user);
-    navigate("/app", { replace: true });
+    if(result?.user) {
+      setUser(result.user);
+      navigate("/app", { replace: true });
+    }
   }
+
+  useEffect(() => {
+  async function checkSession() {
+    const userAuth = await authentication.getSession();
+
+    if (userAuth?.session) {
+      setUser(userAuth.session.user);
+      navigate("/app", { replace: true });
+    }
+  }
+
+  checkSession();
+}, [navigate]);
 
   function getFriendlyErrorMessage(error) {
     if (!error) return "";    
     return error.message;
   }
-
-  useEffect(() => {
-    async function checkSession() {
-      const userAuth = await authentication.getSession();
-      if (userAuth?.session) {
-        setUser(userAuth.session.user);
-        navigate("/app", { replace: true });
-      }
-    }
-    checkSession();
-  }, [navigate]);
 
   return (
 

@@ -5,6 +5,7 @@ let API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 let BASE_ENDPOINT = API_BASE_URL+"/tasks";
 
 function TodoApp () {
+  console.log("TodoApp renderizou");
   // --- Estados ---
   const [tasks, setTasks] = useState([]);
   const [newTodoText, setNewTodoText] = useState('');
@@ -19,13 +20,13 @@ function TodoApp () {
     return sessionData?.session?.access_token ?? '';
   };
 
-  // --- Função principal para carregar as atividades (GET) ---
+// --- Função principal para carregar as atividades (GET) ---
   const fetchTasks = async () => {
     setIsLoading(true);
 
     try {
       const token = await obterToken();
-      
+      console.log("Url de consulta:", BASE_ENDPOINT+"/list");
       const response = await fetch(BASE_ENDPOINT+"/list", {
         method: 'GET',
         headers: {
@@ -52,7 +53,6 @@ function TodoApp () {
   }, []);
 
   // --- Funções de Manipulação (CRUD) ---
-
   // 1. POST (Adicionar)
   const addTodo = async (e) => {
     e.preventDefault();
