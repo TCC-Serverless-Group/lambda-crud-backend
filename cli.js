@@ -8,12 +8,25 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const cloudformation = new CloudFormationClient({ region: process.env.AWS_REGION })
+const config = {
+  region: process.env.AWS_REGION || "sa-east-1",
+  stackName: process.env.AWS_STACK_NAME || "todolist-dev",
+}
+
+// verificando configurações obrigatórias
+if (!config.region || !config.stackName) {
+  console.error(`Propriedade region: ${config.region}`)
+  console.error(`Propriedade stackname: ${config.stackName}`)
+  console.error(" Variáveis obrigatórias não definidas no .env")
+  process.exit(1)
+}
+
+const cloudformation = new CloudFormationClient({ region: config.region })
 
 async function getStackOutputs() {
 
  const response = await cloudformation.send(
-    new DescribeStacksCommand({ StackName: "todolist-dev" })
+    new DescribeStacksCommand({ StackName: config.stackName })
   )
 
   const outputsArray = response.Stacks?.[0]?.Outputs || []
@@ -48,17 +61,6 @@ function removeDir(dir) {
 
 const command = process.argv[2] || "help"
 
-async function backend() {
-  run(`cd backend && npm install`)
-  run("cd backend && npx serverless deploy")
-
-  const outputs = await getStackOutputs()
-
-  console.log("API URL:", outputs.ApiUrl)
-
-  return outputs;
-}
-
 function ensureFrontendEnv(apiUrl) {
   const envFrontendContent = readEnvFile()
   console.log(`### conteúdo do .env:
@@ -81,13 +83,20 @@ function readEnvFile() {
   return envValues;
 }
 
-// function cloudFrontUrl() {
-//   let outputs = await getStackOutputs();
-//   const cloudFrontUrl = outputs.find(o => o.OutputKey === "CloudFrontUrl")?.OutputValue;
+async function backend() {
+  run(`cd backend && npm install`)
+  run("cd backend && npx serverless deploy")
 
-//   console.log("Frontend:", cloudFrontUrl);
-// }
+  const outputs = await getStackOutputs()
 
+  console.log("API URL:", outputs.ApiUrl)
+
+  return outputs;
+}
+
+//
+// DEPLOY COMPLETO
+//
 async function backAndFront() {
  
   console.log("### iniciando deploy do backend ###")
