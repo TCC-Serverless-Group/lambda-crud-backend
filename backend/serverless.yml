@@ -1,12 +1,5 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
-#org: pedrossdeveloper
-# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
-#app: todolist
-# "service" is the name of this project. This will also be added to your AWS resource names.
 service: todolist
-plugins:
-      - serverless-dotenv-plugin
-      - serverless-offline
+frameworkVersion: '3'
 useDotenv: true
 custom:
   dotenv:
@@ -36,6 +29,10 @@ provider:
       allowCredentials: false
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
+
+plugins:
+      - serverless-dotenv-plugin
+      - serverless-offline
 
 functions:
   createTask:
