@@ -7,10 +7,10 @@ from pathlib import Path
 
 INCLUDED_PATHS = {
     "frontend/package.json",
-    "frontend/src/pages/",
+    "frontend/src/pages",
     "frontend/src/App.js",
     "frontend/src/index.js",
-    "frontend/src/components/",
+    "frontend/src/components",
     "frontend/src/ProtectedRoute.js",
     "frontend/src/SupabaseAuth.js",
 
