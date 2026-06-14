@@ -63,11 +63,11 @@ hr {
     transition: background 0.3s;
 }
 
-.todo-item.completed {
+.todo-item.completo {
     background: #e9ecef;
 }
 
-.todo-item.completed .todo-text {
+.todo-item.completo .todo-text {
     text-decoration: line-through;
     color: #888;
 }

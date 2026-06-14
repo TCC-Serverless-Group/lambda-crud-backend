@@ -14,6 +14,7 @@ function TodoApp () {
   const [isLoading, setIsLoading] = useState(true);
 
   const obterToken = async () => {
+    console.log("Obtendo token de autenticação...");
     const sessionData = await authentication.getSession();
     return sessionData?.session?.access_token ?? '';
   };
@@ -34,7 +35,7 @@ function TodoApp () {
       });
 
       const data = await response.json();
-      console.log("Resposta do servidor apos fetch:", JSON.stringify(data));
+      console.log("Resposta do servidor após fetch:", JSON.stringify(data));
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
       setTasks(Array.isArray(parsedData) ? parsedData : []); 
 
@@ -52,6 +53,7 @@ function TodoApp () {
   }, []);
 
   // --- Funções de Manipulação (CRUD) ---
+  
   // 1. POST (Adicionar)
   const addTodo = async (e) => {
     e.preventDefault();

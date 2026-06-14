@@ -31,17 +31,16 @@ function Login() {
   }
 
   useEffect(() => {
-  async function checkSession() {
-    const userAuth = await authentication.getSession();
-
-    if (userAuth?.session) {
-      setUser(userAuth.session.user);
-      navigate("/app", { replace: true });
+    async function checkSession() {
+      const userAuth = await authentication.getSession();
+      if (userAuth?.session) {
+        setUser(userAuth.session.user);
+        navigate("/app", { replace: true });
+      }
     }
-  }
+    checkSession();
+  }, [navigate]);
 
-  checkSession();
-}, [navigate]);
   return (
 
     <div className="login-container">
