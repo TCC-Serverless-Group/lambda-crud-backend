@@ -31,17 +31,23 @@
   
 ### Inalterados no backend:
 
-- backend/src
 - backend/task.sql
 - backend/router.js
+- backend/src/db.js
+- backend/src/getTask.js
+- backend/src/listTask.js
+- backend/src/createTask.js
+- backend/src/deleteTask.js
+- backend/src/updateTask.js
 - backend/validateToken.js
 
 ### Inalterados no frontend:
 
-- frontend/src/pages/
+- frontend/src/pages/Login.js
+- frontend/src/pages/Cadastro.js
+- frontend/src/pages/TodoApp.js
 - frontend/src/index.js
-- frontend/src/components/
+- frontend/src/components/Navbar.js
 - frontend/src/SupabaseAuth.js
 - frontend/src/ProtectedRoute.js
 - frontend/src/App.js
-
