@@ -35,7 +35,7 @@ function TodoApp () {
       });
 
       const data = await response.json();
-      console.log("Resposta do servidor:", JSON.stringify(data));
+      console.log("Resposta do servidor após fetch:", JSON.stringify(data));
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
       setTasks(Array.isArray(parsedData) ? parsedData : []); 
 
