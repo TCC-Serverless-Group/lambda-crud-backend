@@ -25,7 +25,7 @@ function TodoApp () {
 
     try {
       const token = await obterToken();
-      
+      console.log("Url de consulta:", BASE_ENDPOINT+"/list");
       const response = await fetch(BASE_ENDPOINT+"/list", {
         method: 'GET',
         headers: {
