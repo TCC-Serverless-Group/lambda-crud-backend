@@ -27,8 +27,6 @@ function removeDir(dir) {
   }
 }
 
-const command = process.argv[2] || "help"
-
 // Configuração
 const config = {
   projectId: process.env.GCP_PROJECT_ID,
@@ -43,6 +41,8 @@ if (!config.projectId || !config.bucket) {
   console.error(" Variáveis obrigatórias não definidas no .env")
   process.exit(1)
 }
+
+const command = process.argv[2] || "help"
 
 // Função para configurar a infraestrutura
 async function infra() {
@@ -98,15 +98,6 @@ function cls() {
 
 
 switch (command) {
-  case "infra":
-    await infra()
-    break
-  case "frontend":
-    await frontend()
-    break
-  case "backend":
-    await backend()
-    break
   case "deploy":
     try {
       await infra()
@@ -128,12 +119,8 @@ switch (command) {
     console.log(`
     Comandos disponíveis:
 
-    node cli infra
-    node cli frontend
-    node cli backend
     node cli deploy
     node cli remove
-    node cli purge
     node cli cls
     `)
 }
