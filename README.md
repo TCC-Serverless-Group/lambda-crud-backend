@@ -14,3 +14,34 @@
 - node cli remove (para remover os recursos do projeto)
 - node cli cls (para limpar os artefatos do projeto)
 
+### Alterados na base:
+
+- cli.js
+- package.json
+
+### Alterados no backend:
+
+- backend/index.js
+- backend/package.json
+- backend/serverless.yml
+
+### Alterados no frontend:
+
+- frontend/package.json
+  
+### Inalterados no backend:
+
+- backend/src
+- backend/task.sql
+- backend/router.js
+- backend/validateToken.js
+
+### Inalterados no frontend:
+
+- frontend/src/pages/
+- frontend/src/index.js
+- frontend/src/components/
+- frontend/src/SupabaseAuth.js
+- frontend/src/ProtectedRoute.js
+- frontend/src/App.js
+
