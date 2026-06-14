@@ -20,8 +20,9 @@ INCLUDED_PATHS = {
     "backend/validateToken.js",
     "backend/serverless.yml",
     "backend/package.json",
-    
-    "task.sql",
+    "backend/task.sql",
+
+    "package.json",
     "cli.js",
 }
 
