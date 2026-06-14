@@ -1,31 +1,26 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import authentication from "./SupabaseAuth";
+import authentication from './SupabaseAuth';
 
 function ProtectedRoute({ children }) {
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    async function verifySession() {
-      const userAuth = await authentication.getSession();
-
-      setHasSession(Boolean(userAuth?.session));
+    const loadSession = async () => {
+      const data = await authentication.getSession();
+      setSession(data?.session ?? null);
       setLoading(false);
-    }
+    };
 
-    verifySession();
+    loadSession();
   }, []);
 
-  if (loading) {
-    return <p>Verificando sessão...</p>;
-  }
-
-  if (!hasSession) {
-    return <Navigate to="/" replace />;
-  }
+  if (loading) return null;
+  if (!session?.user) return <Navigate to="/" replace />;
 
   return children;
+
 }
 
 export default ProtectedRoute;
