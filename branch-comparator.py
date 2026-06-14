@@ -214,6 +214,7 @@ def print_report(
 
     total_changed_lines = diff_stats.added_lines + diff_stats.removed_lines
     net_line_variation = branch_b_stats.total_lines - branch_a_stats.total_lines
+    variation = branch_a_stats.total_lines - branch_b_stats.total_lines
 
     added_percentage = percentage(diff_stats.added_lines, base_total_lines)
     removed_percentage = percentage(diff_stats.removed_lines, base_total_lines)
@@ -233,8 +234,9 @@ def print_report(
     print("-" * 70)
     print(f"Linhas adicionadas : {diff_stats.added_lines} ({added_percentage:.2f}%)")
     print(f"Linhas removidas   : {diff_stats.removed_lines} ({removed_percentage:.2f}%)")
-    print(f"Linhas alteradas   : {total_changed_lines} ({changed_percentage:.2f}%)")
-    print(f"Arquivos alterados : {diff_stats.changed_files}")
+    print(f"Volume de alteração   : {total_changed_lines} ({changed_percentage:.2f}%)")
+    print(f"Quantidade de arquivos alterados : {diff_stats.changed_files}")
+    print(f"Variação líquida: {variation} linhas ({net_variation_percentage:.2f}%)")
     print()
     print("-" * 70)
     print("TOTAL POR BRANCH")
