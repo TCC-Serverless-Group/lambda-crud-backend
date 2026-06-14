@@ -20,8 +20,10 @@ function Login() {
       return;
     }
 
-    setUser(result.user);
-    navigate("/app", { replace: true });
+    if(result?.user) {
+      setUser(result.user);
+      navigate("/app", { replace: true });
+    }
   }
 
   function getFriendlyErrorMessage(error) {
