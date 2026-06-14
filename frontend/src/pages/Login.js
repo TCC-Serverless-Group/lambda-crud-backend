@@ -24,6 +24,11 @@ function Login() {
       navigate("/app", { replace: true });
     }
   }
+  
+  function getFriendlyErrorMessage(error) {
+    if (!error) return "";    
+    return error.message;
+  }
 
   useEffect(() => {
   async function checkSession() {
@@ -37,12 +42,6 @@ function Login() {
 
   checkSession();
 }, [navigate]);
-
-  function getFriendlyErrorMessage(error) {
-    if (!error) return "";    
-    return error.message;
-  }
-
   return (
 
     <div className="login-container">

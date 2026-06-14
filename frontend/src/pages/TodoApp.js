@@ -36,7 +36,7 @@ function TodoApp () {
       const data = await response.json();
       console.log("Resposta do servidor apos fetch:", JSON.stringify(data));
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
-      setTasks(Array.isArray(data) ? data : []); 
+      setTasks(Array.isArray(parsedData) ? parsedData : []); 
 
     } catch (error) {
       console.error("Erro ao carregar To-Dos:", error);
@@ -47,6 +47,7 @@ function TodoApp () {
 
   // Carrega a lista ao iniciar o componente
   useEffect(() => {
+    console.log("Componente TodoApp montado. Carregando atividades...");
     fetchTasks();
   }, []);
 
@@ -131,6 +132,7 @@ function TodoApp () {
     const updatedText = { descricao: editText };
     try {
         const token = await obterToken();
+        console.log("Obtendo token de autenticação...");
         const response = await fetch(`${BASE_ENDPOINT}${"/put"}/${id}`, {
             method: 'PUT', 
             headers: {
