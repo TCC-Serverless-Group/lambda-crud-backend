@@ -5,6 +5,30 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+INCLUDED_PATHS = {
+    "frontend/src",
+    "backend/src",
+    "frontend/package.json",
+    "backend/package.json",
+    "task.sql",
+    "backend/router.js",
+    "backend/index.js",
+    "backend/validateToken.js",
+    "backend/serverless.yml",
+    "cli.js",
+}
+
+COUNTED_EXTENSIONS = {
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".yml",
+    ".yaml",
+    ".sql",
+    ".json",
+    ".css",
+}
 
 @dataclass
 class DiffStats:
@@ -42,10 +66,34 @@ def run_git_command(args: list[str], repo_path: Path) -> str:
 def validate_git_repo(repo_path: Path) -> None:
     run_git_command(["rev-parse", "--is-inside-work-tree"], repo_path)
 
+def normalize_path(file_path: str) -> str:
+    return file_path.replace("\\", "/").strip("/")
+
+
+def is_inside_or_equal(file_path: str, included_path: str) -> bool:
+    file_path = normalize_path(file_path)
+    included_path = normalize_path(included_path)
+
+    return file_path == included_path or file_path.startswith(included_path + "/")
+
+
+def should_count_file(file_path: str) -> bool:
+    file_path = normalize_path(file_path)
+
+    filename = Path(file_path).name
+    extension = Path(filename).suffix.lower()
+
+    if extension not in COUNTED_EXTENSIONS:
+        return False
+
+    return any(
+        is_inside_or_equal(file_path, included_path)
+        for included_path in INCLUDED_PATHS
+    )
 
 def get_diff_stats(branch_a: str, branch_b: str, repo_path: Path) -> DiffStats:
     output = run_git_command(
-        ["diff", "--numstat", f"{branch_a}..{branch_b}"],
+        ["diff", "--numstat", "-M", "-C", f"{branch_a}..{branch_b}"],
         repo_path
     )
 
@@ -60,12 +108,13 @@ def get_diff_stats(branch_a: str, branch_b: str, repo_path: Path) -> DiffStats:
         if len(parts) < 3:
             continue
 
-        added, removed = parts[0], parts[1]
+        added, removed, file_path = parts[0], parts[1], parts[2]
+
+        if not should_count_file(file_path):
+            continue
 
         stats.changed_files += 1
 
-        # Ignora contagem de linhas para arquivos binários,
-        # que aparecem como "-" no git diff --numstat.
         if added == "-" or removed == "-":
             continue
 
@@ -118,16 +167,19 @@ def count_lines_from_git_object(
     except subprocess.CalledProcessError:
         return 0
 
-
 def get_branch_line_stats(branch: str, repo_path: Path) -> BranchLineStats:
     files = list_files_in_branch(branch, repo_path)
 
     stats = BranchLineStats(
         branch=branch,
-        total_files=len(files)
+        total_files=0
     )
 
     for file_path in files:
+        if not should_count_file(file_path):
+            continue
+
+        stats.total_files += 1
         stats.total_lines += count_lines_from_git_object(
             branch,
             file_path,
@@ -207,6 +259,14 @@ def print_report(
     print(f"  {net_line_variation} linhas ({net_variation_percentage:.2f}%)")
     print("=" * 70)
     print()
+    print("-" * 70)
+    print("ESCOPO ANALISADO")
+    print("-" * 70)
+
+    for included_path in sorted(INCLUDED_PATHS):
+        print(f"  - {included_path}")
+
+    print()
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -227,6 +287,13 @@ def main() -> None:
         "--repo",
         default=".",
         help="Caminho para o repositório Git. Padrão: diretório atual."
+    )
+
+    parser.add_argument(
+        "--dirs",
+        nargs="*",
+        default=[],
+        help="Diretórios que devem entrar na análise. Exemplo: --dirs backend frontend src"
     )
 
     args = parser.parse_args()
