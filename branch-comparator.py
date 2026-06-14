@@ -8,6 +8,7 @@ from pathlib import Path
 INCLUDED_PATHS = {
     "frontend/src",
     "backend/src",
+    "backend/index.js",
     "frontend/package.json",
     "backend/package.json",
     "task.sql",
@@ -93,7 +94,7 @@ def should_count_file(file_path: str) -> bool:
 
 def get_diff_stats(branch_a: str, branch_b: str, repo_path: Path) -> DiffStats:
     output = run_git_command(
-        ["diff", "--numstat", "-M", "-C", f"{branch_a}..{branch_b}"],
+        ["diff", "--numstat", "-M", "-C", "-w", f"{branch_a}..{branch_b}"],
         repo_path
     )
 
