@@ -132,7 +132,6 @@ function TodoApp () {
     const updatedText = { descricao: editText };
     try {
         const token = await obterToken();
-        console.log("Obtendo token de autenticação...");
         const response = await fetch(`${BASE_ENDPOINT}${"/put"}/${id}`, {
             method: 'PUT', 
             headers: {
