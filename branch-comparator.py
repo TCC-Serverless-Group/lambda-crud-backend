@@ -6,16 +6,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 INCLUDED_PATHS = {
-    "frontend/src",
+    "frontend/src/components",
+    "frontend/src/pages",
+    "frontend/src/App.js",
+    "frontend/src/index.js",
+    "frontend/src/ProtectedRoute.js",
+    "frontend/src/SupabaseAuth.js",
     "backend/src",
     "backend/index.js",
+    "backend/router.js",
+    "backend/validateToken.js",
+    "backend/serverless.yml",
     "frontend/package.json",
     "backend/package.json",
     "task.sql",
-    "backend/router.js",
-    "backend/index.js",
-    "backend/validateToken.js",
-    "backend/serverless.yml",
     "cli.js",
 }
 
