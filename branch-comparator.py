@@ -50,7 +50,6 @@ class BranchLineStats:
     total_files: int = 0
     total_lines: int = 0
 
-
 def run_git_command(args: list[str], repo_path: Path) -> str:
     try:
         result = subprocess.run(
@@ -69,20 +68,17 @@ def run_git_command(args: list[str], repo_path: Path) -> str:
             f"STDERR:\n{error.stderr}"
         ) from error
 
-
 def validate_git_repo(repo_path: Path) -> None:
     run_git_command(["rev-parse", "--is-inside-work-tree"], repo_path)
 
 def normalize_path(file_path: str) -> str:
     return file_path.replace("\\", "/").strip("/")
 
-
 def is_inside_or_equal(file_path: str, included_path: str) -> bool:
     file_path = normalize_path(file_path)
     included_path = normalize_path(included_path)
 
     return file_path == included_path or file_path.startswith(included_path + "/")
-
 
 def should_count_file(file_path: str) -> bool:
     file_path = normalize_path(file_path)
@@ -144,10 +140,8 @@ def list_files_in_branch(branch: str, repo_path: Path) -> list[str]:
 
     return [line.strip() for line in output.splitlines() if line.strip()]
 
-
 def is_probably_binary(content: bytes) -> bool:
     return b"\x00" in content
-
 
 def count_lines_from_git_object(
     branch: str,
@@ -195,13 +189,11 @@ def get_branch_line_stats(branch: str, repo_path: Path) -> BranchLineStats:
 
     return stats
 
-
 def percentage(value: int, total: int) -> float:
     if total == 0:
         return 0.0
 
     return (value / total) * 100
-
 
 def print_report(
     branch_a: str,
