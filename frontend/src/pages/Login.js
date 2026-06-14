@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import authentication from '../SupabaseAuth';
 
 function Login() {
-
   const [user, setUser] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
