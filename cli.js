@@ -94,9 +94,7 @@ async function backend() {
   return outputs;
 }
 
-//
 // DEPLOY COMPLETO
-//
 async function backAndFront() {
  
   console.log("### iniciando deploy do backend ###")
@@ -124,9 +122,7 @@ async function backAndFront() {
   )
 }
 
-//
 // REMOVE COMPLETO (idempotente)
-//
 async function remove() {
   const outputs = await getStackOutputs()
   console.log("\n Esvaziando bucket...")
@@ -135,9 +131,7 @@ async function remove() {
   safeRun(`cd backend && npx serverless remove`)
 }
 
-//
 // LIMPEZA LOCAL
-//
 function cls() {
   console.log("\n Limpando artefatos de build...")
 
@@ -154,7 +148,12 @@ function cls() {
 
 switch (command) {
   case "deploy":
-    backAndFront()
+    try {
+      backAndFront()
+    } catch (err) {
+      console.error("Erro durante o deploy:", err)
+      process.exit(1)
+    }
     break
   case "remove":
     remove()

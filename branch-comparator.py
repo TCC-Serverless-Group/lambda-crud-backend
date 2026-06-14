@@ -42,10 +42,56 @@ def run_git_command(args: list[str], repo_path: Path) -> str:
 def validate_git_repo(repo_path: Path) -> None:
     run_git_command(["rev-parse", "--is-inside-work-tree"], repo_path)
 
+def should_count_file(file_path: str) -> bool:
+
+    IGNORED_FILES = {
+        "package-lock.json",
+        "yarn.lock",
+        "pnpm-lock.yaml",
+        ".env"
+    }
+
+    IGNORED_DIRS = {
+        "node_modules",
+        "build",
+        "dist",
+        ".serverless",
+        ".webpack",
+        ".git",
+        "coverage"
+    }
+
+    COUNTED_EXTENSIONS = {
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".yml",
+        ".yaml",
+        ".html",
+        ".css",
+        ".sql",
+        ".py"
+    }
+
+    path_parts = file_path.replace("\\", "/").split("/")
+
+    for part in path_parts:
+        if part in IGNORED_DIRS:
+            return False
+
+    filename = path_parts[-1]
+
+    if filename in IGNORED_FILES:
+        return False
+
+    extension = Path(filename).suffix.lower()
+
+    return extension in COUNTED_EXTENSIONS
 
 def get_diff_stats(branch_a: str, branch_b: str, repo_path: Path) -> DiffStats:
     output = run_git_command(
-        ["diff", "--numstat", f"{branch_a}..{branch_b}"],
+        ["diff", "--numstat", "-M", "-C", f"{branch_a}..{branch_b}"],
         repo_path
     )
 
@@ -60,12 +106,13 @@ def get_diff_stats(branch_a: str, branch_b: str, repo_path: Path) -> DiffStats:
         if len(parts) < 3:
             continue
 
-        added, removed = parts[0], parts[1]
+        added, removed, file_path = parts[0], parts[1], parts[2]
+
+        if not should_count_file(file_path):
+            continue
 
         stats.changed_files += 1
 
-        # Ignora contagem de linhas para arquivos binários,
-        # que aparecem como "-" no git diff --numstat.
         if added == "-" or removed == "-":
             continue
 
@@ -128,11 +175,14 @@ def get_branch_line_stats(branch: str, repo_path: Path) -> BranchLineStats:
     )
 
     for file_path in files:
-        stats.total_lines += count_lines_from_git_object(
-            branch,
-            file_path,
-            repo_path
-        )
+        if not should_count_file(file_path):
+            continue
+
+    stats.total_lines += count_lines_from_git_object(
+        branch,
+        file_path,
+        repo_path
+    )
 
     return stats
 
@@ -227,6 +277,13 @@ def main() -> None:
         "--repo",
         default=".",
         help="Caminho para o repositório Git. Padrão: diretório atual."
+    )
+
+    parser.add_argument(
+        "--dirs",
+        nargs="*",
+        default=[],
+        help="Diretórios que devem entrar na análise. Exemplo: --dirs backend frontend src"
     )
 
     args = parser.parse_args()
