@@ -1,8 +1,4 @@
-import { createTask } from './src/createTask.js';
-import { getTask } from './src/getTask.js';
-import { updateTask } from './src/updateTask.js';
-import { deleteTask } from './src/deleteTask.js';
-import { listTasks } from './src/listTask.js';
+import { route } from './router.js';
 import { validateSupabaseToken } from "./validateToken.js";
 
 function applyCorsHeaders(res) {
@@ -14,44 +10,28 @@ function applyCorsHeaders(res) {
 export const handler = async (req, res) => {
 
   applyCorsHeaders(res);
-
-  if (req.method === "OPTIONS") {
-    return res.status(204).send("");
-  }
-
-  const token = String(req.headers.token);
   
   try {
+
+    if (req.method === "OPTIONS") {
+      return res.status(204).send("");
+    }
+
+    const token = String(req.headers.token);
     
     let data = validateSupabaseToken(token); // valida o token e retorna o payload do usuário, se válido
     const userId = data?.user?.id;
 
     const path = req.path;
 
-    if (req.method === "POST" && path === "/tasks/save") {
-      return res.status(201).json(await createTask(req.body, userId));
-    }
+    const result = await route({
+      method: req.method,
+      path: path,
+      body: req.body ? req.body : {},
+      userId: userId,
+    });
 
-    if (req.method === "GET" && path === "/tasks/list") {
-      return res.status(200).json(await listTasks(userId));
-    }
-
-    if (req.method === "GET" && path.startsWith("/tasks/get/")) {
-      const id = path.split("/").pop();
-      return res.status(200).json(await getTask(id, userId));
-    }
-
-    if (req.method === "PUT" && path.startsWith("/tasks/put/")) {
-      const id = path.split("/").pop();
-      return res.status(204).json(await updateTask(id, req.body, userId));
-    }
-
-    if (req.method === "DELETE" && path.startsWith("/tasks/delete/")) {
-      const id = path.split("/").pop();
-      return res.status(204).json(await deleteTask(id, userId));
-    }
-
-    return res.status(404).json({ message: "Rota não encontrada" });
+    return res.status(result.statusCode).json(JSON.stringify(result.body));
   } catch (err) {
     applyCorsHeaders(res);
     console.error(err);

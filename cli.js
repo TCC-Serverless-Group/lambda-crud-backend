@@ -61,7 +61,7 @@ async function frontend() {
   run(`cd frontend && npm run build`)
   console.log("\n executou o upload do frontend")
   run(`gcloud storage rsync frontend/build gs://${config.bucket} --recursive --delete-unmatched-destination-objects`)
-  
+  console.log(`\n Frontend implantado com sucesso! Acesse: https://storage.googleapis.com/${config.bucket}/index.html`) 
 }
 
 // Função para implantar o backend

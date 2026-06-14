@@ -36,7 +36,8 @@ function TodoApp () {
 
       const data = await response.json();
       console.log("Resposta do servidor:", JSON.stringify(data));
-      setTasks(Array.isArray(data) ? data : []); 
+      const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+      setTasks(Array.isArray(parsedData) ? parsedData : []); 
 
     } catch (error) {
       console.error("Erro ao carregar To-Dos:", error);
