@@ -7,7 +7,6 @@ import ProtectedRoute from "./ProtectedRoute";
 import Navbar from './components/Navbar';
 
 function App() {
-  console.log("App renderizou");
   return (
     <div className="App">
       <Navbar />
