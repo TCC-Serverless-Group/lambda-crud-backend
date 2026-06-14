@@ -6,19 +6,21 @@ from dataclasses import dataclass
 from pathlib import Path
 
 INCLUDED_PATHS = {
-    "frontend/src/components",
-    "frontend/src/pages",
+    "frontend/package.json",
+    "frontend/src/pages/",
     "frontend/src/App.js",
     "frontend/src/index.js",
+    "frontend/src/components/",
     "frontend/src/ProtectedRoute.js",
     "frontend/src/SupabaseAuth.js",
+
     "backend/src",
     "backend/index.js",
     "backend/router.js",
     "backend/validateToken.js",
     "backend/serverless.yml",
-    "frontend/package.json",
     "backend/package.json",
+    
     "task.sql",
     "cli.js",
 }
@@ -48,7 +50,6 @@ class BranchLineStats:
     total_files: int = 0
     total_lines: int = 0
 
-
 def run_git_command(args: list[str], repo_path: Path) -> str:
     try:
         result = subprocess.run(
@@ -67,20 +68,17 @@ def run_git_command(args: list[str], repo_path: Path) -> str:
             f"STDERR:\n{error.stderr}"
         ) from error
 
-
 def validate_git_repo(repo_path: Path) -> None:
     run_git_command(["rev-parse", "--is-inside-work-tree"], repo_path)
 
 def normalize_path(file_path: str) -> str:
     return file_path.replace("\\", "/").strip("/")
 
-
 def is_inside_or_equal(file_path: str, included_path: str) -> bool:
     file_path = normalize_path(file_path)
     included_path = normalize_path(included_path)
 
     return file_path == included_path or file_path.startswith(included_path + "/")
-
 
 def should_count_file(file_path: str) -> bool:
     file_path = normalize_path(file_path)
@@ -142,10 +140,8 @@ def list_files_in_branch(branch: str, repo_path: Path) -> list[str]:
 
     return [line.strip() for line in output.splitlines() if line.strip()]
 
-
 def is_probably_binary(content: bytes) -> bool:
     return b"\x00" in content
-
 
 def count_lines_from_git_object(
     branch: str,
@@ -193,13 +189,11 @@ def get_branch_line_stats(branch: str, repo_path: Path) -> BranchLineStats:
 
     return stats
 
-
 def percentage(value: int, total: int) -> float:
     if total == 0:
         return 0.0
 
     return (value / total) * 100
-
 
 def print_report(
     branch_a: str,
@@ -212,6 +206,7 @@ def print_report(
 
     total_changed_lines = diff_stats.added_lines + diff_stats.removed_lines
     net_line_variation = branch_b_stats.total_lines - branch_a_stats.total_lines
+    variation = branch_a_stats.total_lines - branch_b_stats.total_lines
 
     added_percentage = percentage(diff_stats.added_lines, base_total_lines)
     removed_percentage = percentage(diff_stats.removed_lines, base_total_lines)
@@ -231,8 +226,9 @@ def print_report(
     print("-" * 70)
     print(f"Linhas adicionadas : {diff_stats.added_lines} ({added_percentage:.2f}%)")
     print(f"Linhas removidas   : {diff_stats.removed_lines} ({removed_percentage:.2f}%)")
-    print(f"Linhas alteradas   : {total_changed_lines} ({changed_percentage:.2f}%)")
-    print(f"Arquivos alterados : {diff_stats.changed_files}")
+    print(f"Volume de alteração   : {total_changed_lines} ({changed_percentage:.2f}%)")
+    print(f"Quantidade de arquivos alterados : {diff_stats.changed_files}")
+    print(f"Variação líquida: {variation} linhas ({net_variation_percentage:.2f}%)")
     print()
     print("-" * 70)
     print("TOTAL POR BRANCH")
