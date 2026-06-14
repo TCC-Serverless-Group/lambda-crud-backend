@@ -5,7 +5,6 @@ let API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 let BASE_ENDPOINT = API_BASE_URL+"/tasks";
 
 function TodoApp () {
-  console.log("TodoApp renderizou");
   // --- Estados ---
   const [tasks, setTasks] = useState([]);
   const [newTodoText, setNewTodoText] = useState('');
@@ -15,7 +14,6 @@ function TodoApp () {
   const [isLoading, setIsLoading] = useState(true);
 
   const obterToken = async () => {
-    console.log("Obtendo token de autenticação...");
     const sessionData = await authentication.getSession();
     return sessionData?.session?.access_token ?? '';
   };
@@ -36,7 +34,7 @@ function TodoApp () {
       });
 
       const data = await response.json();
-      console.log("Resposta do servidor:", JSON.stringify(data));
+      console.log("Resposta do servidor apos fetch:", JSON.stringify(data));
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
       setTasks(Array.isArray(data) ? data : []); 
 
@@ -49,7 +47,6 @@ function TodoApp () {
 
   // Carrega a lista ao iniciar o componente
   useEffect(() => {
-    console.log("Componente TodoApp montado. Carregando atividades...");
     fetchTasks();
   }, []);
 
