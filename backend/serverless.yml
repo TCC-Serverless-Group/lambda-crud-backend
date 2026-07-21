@@ -15,6 +15,7 @@ provider:
     
 plugins:
   - serverless-google-cloudfunctions
+  - serverless-dotenv-plugin
 
 functions:
   api:
