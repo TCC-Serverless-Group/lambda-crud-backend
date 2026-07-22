@@ -14,3 +14,13 @@ variable "frontend_bucket_name" {
 variable "cloud_function_url" {
   type = string
 }
+
+variable "api_id" {
+  type    = string
+  default = "todolist-api"
+}
+
+variable "gateway_id" {
+  type    = string
+  default = "todolist-gateway"
+}

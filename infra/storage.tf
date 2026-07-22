@@ -8,10 +8,8 @@ resource "google_storage_bucket" "frontend" {
     main_page_suffix = "index.html"
     not_found_page   = "index.html"
   }
-}
 
-resource "google_storage_bucket_iam_member" "public_read" {
-  bucket = google_storage_bucket.frontend.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
+  depends_on = [
+    google_project_service.storage
+  ]
 }

@@ -1,126 +1,174 @@
 #!/usr/bin/env node
 
-import { execSync } from "child_process"
-import fs from "fs"
-import path from "path"
+import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 function run(cmd) {
-  console.log(`\n ${cmd}`)
-  execSync(cmd, { stdio: "inherit", shell: true })
+  console.log(`\n${cmd}`);
+  execSync(cmd, { stdio: "inherit", shell: true });
+}
+
+function output(cmd) {
+  return execSync(cmd, { encoding: "utf-8", shell: true }).trim();
 }
 
 function safeRun(cmd) {
   try {
-    run(cmd)
+    run(cmd);
   } catch {
-    console.log(" Ignorando erro (provavelmente recurso inexistente)")
+    console.log("Ignorando erro.");
   }
 }
 
 function removeDir(dir) {
   if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true })
-    console.log(` Removido: ${dir}`)
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`Removido: ${dir}`);
   }
 }
 
-// Configuração
 const config = {
   projectId: process.env.GCP_PROJECT_ID,
   region: process.env.GCP_REGION || "us-central1",
   bucket: process.env.FRONTEND_BUCKET,
-}
+};
 
-// verificando configurações obrigatórias
 if (!config.projectId || !config.bucket) {
-  console.error(`Propriedade projectId: ${config.projectId}`)
-  console.error(`Propriedade bucket: ${config.bucket}`)
-  console.error(" Variáveis obrigatórias não definidas no .env")
-  process.exit(1)
+  console.error("Variáveis obrigatórias não definidas no .env");
+  process.exit(1);
 }
 
-const command = process.argv[2] || "help"
-
-// Função para configurar a infraestrutura
-async function infra() {
-  safeRun(`gcloud config set project ${config.projectId}`)
-  safeRun(`gcloud services enable cloudfunctions.googleapis.com run.googleapis.com compute.googleapis.com cloudbuild.googleapis.com`)
-  safeRun(`gcloud storage buckets create gs://${config.bucket} --location=${config.region}`)
-  safeRun(`gcloud storage buckets update gs://${config.bucket} --web-main-page-suffix=index.html`)
-  safeRun(`gcloud storage buckets add-iam-policy-binding gs://${config.bucket} --member=allUsers --role=roles/storage.objectViewer`)
+function backendDeploy() {
+  run("cd backend && npm install && npx serverless deploy");
 }
 
-// Função para construir e implantar o frontend
-async function frontend() {
-  console.log("\n executou a install do frontend")
-  run(`cd frontend && npm install`)
-  console.log("\n executou o build do frontend")
-  run(`cd frontend && npm run build`)
-  console.log("\n executou o upload do frontend")
-  run(`gcloud storage rsync frontend/build gs://${config.bucket} --recursive --delete-unmatched-destination-objects`)
-  console.log(`\n Frontend implantado com sucesso! Acesse: https://storage.googleapis.com/${config.bucket}/index.html`) 
+function backendRemove() {
+  safeRun("cd backend && npx serverless remove");
 }
 
-// Função para implantar o backend
-async function backend() {
-  await infra()
-  run(`cd backend && npm install && npx serverless deploy`)
-  safeRun(`gcloud functions add-iam-policy-binding todolist-dev-api --region=${config.region} --member="allUsers" --role="roles/cloudfunctions.invoker"`) 
+function getCloudFunctionUrl() {
+  return output(
+    `gcloud functions describe todolist-dev-api ` +
+    `--region=${config.region} ` +
+    `--project=${config.projectId} ` +
+    `--format="value(httpsTrigger.url)"`
+  );
 }
 
-// Função para remover os recursos do projeto
+function tofuApply() {
+  const functionUrl = getCloudFunctionUrl();
+
+  run(
+    `cd infra && tofu init && tofu apply -auto-approve ` +
+    `-var="project_id=${config.projectId}" ` +
+    `-var="region=${config.region}" ` +
+    `-var="frontend_bucket_name=${config.bucket}" ` +
+    `-var="cloud_function_url=${functionUrl}"`
+  );
+}
+
+function tofuDestroy() {
+  safeRun(
+    `cd infra && tofu destroy -auto-approve ` +
+    `-var="project_id=${config.projectId}" ` +
+    `-var="region=${config.region}" ` +
+    `-var="frontend_bucket_name=${config.bucket}" ` +
+    `-var="cloud_function_url=dummy"`
+  );
+}
+
+function tofuOutput(name) {
+  return output(`cd infra && tofu output -raw ${name}`);
+}
+
+function ensureFrontendEnv(apiUrl) {
+  const envPath = path.resolve("frontend", ".env");
+
+  const content = [
+    `REACT_APP_API_BASE_URL=${apiUrl}`,
+    `REACT_APP_SUPABASE_URL=${process.env.REACT_APP_SUPABASE_URL ?? ""}`,
+    `REACT_APP_SUPABASE_ANON_KEY=${process.env.REACT_APP_SUPABASE_ANON_KEY ?? ""}`,
+  ].join("\n");
+
+  fs.writeFileSync(envPath, content);
+}
+
+function frontendDeploy() {
+  const apiUrl = tofuOutput("api_url");
+  const bucketName = tofuOutput("frontend_bucket_name");
+
+  ensureFrontendEnv(apiUrl);
+
+  run("cd frontend && npm install");
+  run("cd frontend && npm run build");
+  run(`gcloud storage rsync frontend/build gs://${bucketName} --recursive --delete-unmatched-destination-objects`);
+
+  console.log(`Frontend publicado no bucket: ${bucketName}`);
+  console.log(`API Gateway URL: ${apiUrl}`);
+}
+
+async function deploy() {
+  backendDeploy();
+  tofuApply();
+  frontendDeploy();
+
+  console.log("\nProjeto implantado com sucesso.");
+}
+
 async function remove() {
- console.log("\n Removendo backend (Serverless)...")
-  safeRun(`cd backend && npx serverless remove`)
+  tofuDestroy();
+  backendRemove();
 
-  console.log("\n  Removendo bucket (se existir)...")
-  safeRun(`gcloud storage rm gs://${config.bucket} --recursive`)  
-  safeRun(`gcloud storage buckets delete gs://${config.bucket}`)
-  console.log("\n  Aguarde alguns instantes antes de provisionar novamente, para garantir que os recursos sejam completamente removidos.")
+  console.log("\nRecursos removidos.");
 }
 
-// Função para executar realizar limpeza de artefatos de build
 function cls() {
-  console.log("\n🧹 Limpando artefatos de build...")
+  removeDir(path.resolve("backend/.serverless"));
+  removeDir(path.resolve("backend/dist"));
+  removeDir(path.resolve("backend/node_modules"));
+  removeDir(path.resolve("frontend/build"));
+  removeDir(path.resolve("frontend/dist"));
 
-  removeDir(path.resolve("backend/.serverless"))
-  removeDir(path.resolve("backend/dist"))
-  removeDir(path.resolve("backend/node_modules"))
-  //removeDir(path.resolve("backend/.webpack"))
-  removeDir(path.resolve("frontend/build"))
-  removeDir(path.resolve("frontend/dist"))
-
-  console.log("\n Build limpo com sucesso.")
+  console.log("\nBuild limpo com sucesso.");
 }
 
+const command = process.argv[2] || "help";
 
 switch (command) {
   case "deploy":
-    try {
-      await infra()
-      await backend()
-      await frontend()
-      console.log("\n Projeto implantado com sucesso!")
-    } catch (err) {
-      console.error("Erro durante o deploy:", err)
-      process.exit(1)
-    }
-    break
+    await deploy();
+    break;
+
   case "remove":
-    await remove()
-    break
+    await remove();
+    break;
+
+  case "backend":
+    backendDeploy();
+    break;
+
+  case "infra":
+    tofuApply();
+    break;
+
+  case "frontend":
+    frontendDeploy();
+    break;
+
   case "cls":
-    cls()
-    break
+    cls();
+    break;
+
   default:
     console.log(`
-    Comandos disponíveis:
+Comandos disponíveis:
 
-    node cli deploy
-    node cli remove
-    node cli cls
-    `)
+  node cli.js deploy
+  node cli.js remove
+  node cli.js cls
+`);
 }

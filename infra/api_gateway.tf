@@ -5,8 +5,7 @@ locals {
 }
 
 resource "google_api_gateway_api" "todolist" {
-  provider = google
-  api_id   = "todolist-api"
+  api_id = var.api_id
 
   depends_on = [
     google_project_service.api_gateway
@@ -14,9 +13,8 @@ resource "google_api_gateway_api" "todolist" {
 }
 
 resource "google_api_gateway_api_config" "todolist" {
-  provider      = google
   api           = google_api_gateway_api.todolist.api_id
-  api_config_id = "todolist-config"
+  api_config_id = "${var.api_id}-config"
 
   openapi_documents {
     document {
@@ -28,11 +26,15 @@ resource "google_api_gateway_api_config" "todolist" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [
+    google_project_service.service_management,
+    google_project_service.service_control
+  ]
 }
 
 resource "google_api_gateway_gateway" "todolist" {
-  provider   = google
-  gateway_id = "todolist-gateway"
+  gateway_id = var.gateway_id
   api_config = google_api_gateway_api_config.todolist.id
   region     = var.region
 }
