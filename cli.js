@@ -35,6 +35,7 @@ const config = {
   projectId: process.env.GCP_PROJECT_ID,
   region: process.env.GCP_REGION || "us-central1",
   bucket: process.env.FRONTEND_BUCKET,
+  functionName: process.env.GCP_FUNCTION_NAME || "todolist-dev-api",
 };
 
 if (!config.projectId || !config.bucket) {
@@ -67,7 +68,8 @@ function tofuApply() {
     `-var="project_id=${config.projectId}" ` +
     `-var="region=${config.region}" ` +
     `-var="frontend_bucket_name=${config.bucket}" ` +
-    `-var="cloud_function_url=${functionUrl}"`
+    `-var="cloud_function_url=${functionUrl}"`+
+    `-var="function_name=${config.functionName}"`
   );
 }
 
@@ -145,18 +147,6 @@ switch (command) {
 
   case "remove":
     await remove();
-    break;
-
-  case "backend":
-    backendDeploy();
-    break;
-
-  case "infra":
-    tofuApply();
-    break;
-
-  case "frontend":
-    frontendDeploy();
     break;
 
   case "cls":

@@ -7,16 +7,46 @@ info:
 schemes:
   - https
 
-paths:
-  /tasks/{proxy+}:
-    x-google-backend:
-      address: ${cloud_function_url}
-      path_translation: APPEND_PATH_TO_ADDRESS
+produces:
+  - application/json
 
+x-google-backend:
+  address: ${cloud_function_url}
+  path_translation: APPEND_PATH_TO_ADDRESS
+  disable_auth: true
+
+paths:
+  /tasks/save:
     options:
-      operationId: optionsTasks
+      operationId: optionsTasksSave
+      responses:
+        "204":
+          description: CORS preflight
+
+    post:
+      operationId: postTasksSave
+      responses:
+        "200":
+          description: OK
+
+  /tasks/list:
+    options:
+      operationId: optionsTasksList
+      responses:
+        "204":
+          description: CORS preflight
+
+    get:
+      operationId: getTasksList
+      responses:
+        "200":
+          description: OK
+
+  /tasks/get/{id}:
+    options:
+      operationId: optionsTasksGet
       parameters:
-        - name: proxy
+        - name: id
           in: path
           required: true
           type: string
@@ -25,9 +55,9 @@ paths:
           description: CORS preflight
 
     get:
-      operationId: getTasksProxy
+      operationId: getTaskById
       parameters:
-        - name: proxy
+        - name: id
           in: path
           required: true
           type: string
@@ -35,21 +65,22 @@ paths:
         "200":
           description: OK
 
-    post:
-      operationId: postTasksProxy
+  /tasks/put/{id}:
+    options:
+      operationId: optionsTasksPut
       parameters:
-        - name: proxy
+        - name: id
           in: path
           required: true
           type: string
       responses:
-        "200":
-          description: OK
+        "204":
+          description: CORS preflight
 
     put:
-      operationId: putTasksProxy
+      operationId: putTaskById
       parameters:
-        - name: proxy
+        - name: id
           in: path
           required: true
           type: string
@@ -57,10 +88,22 @@ paths:
         "200":
           description: OK
 
-    delete:
-      operationId: deleteTasksProxy
+  /tasks/delete/{id}:
+    options:
+      operationId: optionsTasksDelete
       parameters:
-        - name: proxy
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        "204":
+          description: CORS preflight
+
+    delete:
+      operationId: deleteTaskById
+      parameters:
+        - name: id
           in: path
           required: true
           type: string

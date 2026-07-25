@@ -26,6 +26,6 @@ export function validateSupabaseToken(token) {
       role: payload.role
     };
   } catch (err) {
-    throw new Error("Token inválido: " + JSON.stringify(err)+`\nToken recebido: ${JWT_SECRET}`);
+    throw new Error("Token inválido: ");
   }
 }

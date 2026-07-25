@@ -10,7 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "serverless-dotenv-plugin": "^6.0.0"
   },
   "devDependencies": {
     "serverless-google-cloudfunctions": "^4.6.0"

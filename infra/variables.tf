@@ -24,3 +24,8 @@ variable "gateway_id" {
   type    = string
   default = "todolist-gateway"
 }
+
+variable "function_name" {
+  type    = string
+  default = "todolist-dev-api"
+}

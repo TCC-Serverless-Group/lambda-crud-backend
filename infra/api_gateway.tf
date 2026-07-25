@@ -5,6 +5,7 @@ locals {
 }
 
 resource "google_api_gateway_api" "todolist" {
+  provider = google-beta
   api_id = var.api_id
 
   depends_on = [
@@ -13,6 +14,7 @@ resource "google_api_gateway_api" "todolist" {
 }
 
 resource "google_api_gateway_api_config" "todolist" {
+  provider = google-beta
   api           = google_api_gateway_api.todolist.api_id
   api_config_id = "${var.api_id}-config"
 
@@ -34,6 +36,7 @@ resource "google_api_gateway_api_config" "todolist" {
 }
 
 resource "google_api_gateway_gateway" "todolist" {
+  provider = google-beta
   gateway_id = var.gateway_id
   api_config = google_api_gateway_api_config.todolist.id
   region     = var.region
