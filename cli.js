@@ -92,8 +92,8 @@ function ensureFrontendEnv(apiUrl) {
 
   const content = [
     `REACT_APP_API_BASE_URL=${apiUrl}`,
-    `REACT_APP_SUPABASE_URL=${process.env.REACT_APP_SUPABASE_URL ?? ""}`,
-    `REACT_APP_SUPABASE_ANON_KEY=${process.env.REACT_APP_SUPABASE_ANON_KEY ?? ""}`,
+    `REACT_APP_SUPABASE_URL=${process.env.SUPABASE_URL ?? ""}`,
+    `REACT_APP_SUPABASE_ANON_KEY=${process.env.SUPABASE_ANON_KEY ?? ""}`,
   ].join("\n");
 
   fs.writeFileSync(envPath, content);
