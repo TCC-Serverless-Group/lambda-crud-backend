@@ -1,5 +1,11 @@
 swagger: "2.0"
 
+host: "todolist-api.endpoints.todolist-gcp-project.cloud.goog"
+
+x-google-endpoints:
+  - name: "todolist-api.endpoints.todolist-gcp-project.cloud.goog"
+    allowCors: true
+
 info:
   title: todolist-api
   version: "1.0.0"

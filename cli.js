@@ -68,7 +68,7 @@ function tofuApply() {
     `-var="project_id=${config.projectId}" ` +
     `-var="region=${config.region}" ` +
     `-var="frontend_bucket_name=${config.bucket}" ` +
-    `-var="cloud_function_url=${functionUrl}"`+
+    `-var="cloud_function_url=${functionUrl}" `+
     `-var="function_name=${config.functionName}"`
   );
 }
