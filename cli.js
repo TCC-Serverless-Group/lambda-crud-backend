@@ -102,15 +102,19 @@ function ensureFrontendEnv(apiUrl) {
 function frontendDeploy() {
   const apiUrl = tofuOutput("api_url");
   const bucketName = tofuOutput("frontend_bucket_name");
+  const frontendUrl = tofuOutput("frontend_url");
 
   ensureFrontendEnv(apiUrl);
 
   run("cd frontend && npm install");
   run("cd frontend && npm run build");
-  run(`gcloud storage rsync frontend/build gs://${bucketName} --recursive --delete-unmatched-destination-objects`);
+  run(
+    `gcloud storage rsync frontend/build gs://${bucketName} ` +
+    `--recursive --delete-unmatched-destination-objects`
+  );
 
   console.log(`Frontend publicado no bucket: ${bucketName}`);
-  console.log(`API Gateway URL: ${apiUrl}`);
+  console.log(`Frontend URL: ${frontendUrl}`);
 }
 
 async function deploy() {
