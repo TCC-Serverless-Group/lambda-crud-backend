@@ -4,12 +4,11 @@
     "cli": "./cli.js"
   },
   "scripts": {
-    "test": "test",
-    "cli": "node cli.js",
-    "deploy:gcp": "node cli.js deploy"
+    "deploy:aws": "node cli.js deploy",
+    "remove:aws": "node cli.js remove",
+    "clean": "node cli.js cls"
   },
   "dependencies": {
-    "dotenv": "^17.3.1",
-    "serverless-google-cloudfunctions": "^4.6.0"
+    "dotenv": "^17.3.1"
   }
 }

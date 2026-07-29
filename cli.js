@@ -1,123 +1,265 @@
 #!/usr/bin/env node
 
-import { execSync } from "child_process";
-import fs from "fs";
-import path from "path";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import dotenv from "dotenv";
 
-dotenv.config();
+const ROOT_DIR = process.cwd();
+const BACKEND_DIR = path.resolve(ROOT_DIR, "backend");
+const FRONTEND_DIR = path.resolve(ROOT_DIR, "frontend");
+const INFRA_DIR = path.resolve(ROOT_DIR, "infra");
 
-function run(cmd) {
-  console.log(`\n${cmd}`);
-  execSync(cmd, { stdio: "inherit", shell: true });
-}
+dotenv.config({
+  path: path.resolve(ROOT_DIR, ".env"),
+});
 
-function output(cmd) {
-  return execSync(cmd, { encoding: "utf-8", shell: true }).trim();
-}
+const serviceName = process.env.AWS_SERVICE_NAME || "todolist";
+const stage = process.env.AWS_STAGE || "dev";
 
-function safeRun(cmd) {
-  try {
-    run(cmd);
-  } catch {
-    console.log("Ignorando erro.");
-  }
-}
+const config = Object.freeze({
+  region: process.env.AWS_REGION || "us-east-1",
+  stage,
+  serviceName,
 
-function removeDir(dir) {
-  if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true });
-    console.log(`Removido: ${dir}`);
-  }
-}
-
-const config = {
-  projectId: process.env.GCP_PROJECT_ID,
-  region: process.env.GCP_REGION || "us-central1",
   bucket: process.env.FRONTEND_BUCKET,
-  functionName: process.env.GCP_FUNCTION_NAME || "todolist-dev-api",
-};
 
-if (!config.projectId || !config.bucket) {
-  console.error("Variáveis obrigatórias não definidas no .env");
-  process.exit(1);
+  functionName:
+    process.env.AWS_FUNCTION_NAME ||
+    `${serviceName}-${stage}-api`,
+
+  databaseUrl: process.env.DATABASE_URL,
+  supabaseUrl: process.env.SUPABASE_URL,
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+  supabaseJwtSecret: process.env.SUPABASE_JWT_SECRET,
+});
+
+function formatCommand(command, args) {
+  return [command, ...args]
+    .map((value) => {
+      const text = String(value);
+
+      return text.includes(" ")
+        ? `"${text}"`
+        : text;
+    })
+    .join(" ");
+}
+
+function run(command, args = [], cwd = ROOT_DIR) {
+  console.log(`\n$ ${formatCommand(command, args)}`);
+
+  execFileSync(command, args, {
+    cwd,
+    stdio: "inherit",
+    env: process.env,
+  });
+}
+
+function output(command, args = [], cwd = ROOT_DIR) {
+  return execFileSync(command, args, {
+    cwd,
+    encoding: "utf-8",
+    env: process.env,
+  }).trim();
+}
+
+function removeDir(directory) {
+  if (!fs.existsSync(directory)) {
+    return;
+  }
+
+  fs.rmSync(directory, {
+    recursive: true,
+    force: true,
+  });
+
+  console.log(`Removido: ${directory}`);
+}
+
+function validateConfig() {
+  const requiredVariables = {
+    FRONTEND_BUCKET: config.bucket,
+    DATABASE_URL: config.databaseUrl,
+    SUPABASE_URL: config.supabaseUrl,
+    SUPABASE_ANON_KEY: config.supabaseAnonKey,
+    SUPABASE_JWT_SECRET: config.supabaseJwtSecret,
+  };
+
+  const missingVariables = Object.entries(requiredVariables)
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missingVariables.length > 0) {
+    throw new Error(
+      `Variáveis obrigatórias não definidas: ${missingVariables.join(", ")}`
+    );
+  }
+}
+
+function checkAwsCredentials() {
+  const accountId = output("aws", [
+    "sts",
+    "get-caller-identity",
+    "--query",
+    "Account",
+    "--output",
+    "text",
+    "--region",
+    config.region,
+  ]);
+
+  console.log(`Conta AWS autenticada: ${accountId}`);
+  console.log(`Região: ${config.region}`);
+  console.log(`Stage: ${config.stage}`);
 }
 
 function backendDeploy() {
-  run("cd backend && npm install && npx serverless deploy");
-}
+  console.log("\n### Implantando Lambda com Serverless ###");
 
-function backendRemove() {
-  safeRun("cd backend && npx serverless remove");
-}
+  run("npm", ["install"], BACKEND_DIR);
 
-function getCloudFunctionUrl() {
-  return output(
-    `gcloud functions describe todolist-dev-api ` +
-    `--region=${config.region} ` +
-    `--project=${config.projectId} ` +
-    `--format="value(httpsTrigger.url)"`
+  run(
+    "npx",
+    [
+      "serverless",
+      "deploy",
+      "--stage",
+      config.stage,
+      "--region",
+      config.region,
+    ],
+    BACKEND_DIR
   );
 }
 
-function tofuApply() {
-  const functionUrl = getCloudFunctionUrl();
+function backendRemove() {
+  console.log("\n### Removendo Lambda com Serverless ###");
 
   run(
-    `cd infra && tofu init && tofu apply -auto-approve ` +
-    `-var="project_id=${config.projectId}" ` +
-    `-var="region=${config.region}" ` +
-    `-var="frontend_bucket_name=${config.bucket}" ` +
-    `-var="cloud_function_url=${functionUrl}"`+
-    `-var="function_name=${config.functionName}"`
+    "npx",
+    [
+      "serverless",
+      "remove",
+      "--stage",
+      config.stage,
+      "--region",
+      config.region,
+    ],
+    BACKEND_DIR
+  );
+}
+
+function tofuVariables() {
+  return [
+    `-var=region=${config.region}`,
+    `-var=stage=${config.stage}`,
+    `-var=service_name=${config.serviceName}`,
+    `-var=frontend_bucket_name=${config.bucket}`,
+    `-var=lambda_function_name=${config.functionName}`,
+  ];
+}
+
+function tofuInit() {
+  console.log("\n### Inicializando OpenTofu ###");
+
+  run("tofu", ["init"], INFRA_DIR);
+}
+
+function tofuApply() {
+  console.log("\n### Implantando infraestrutura AWS ###");
+
+  tofuInit();
+
+  run(
+    "tofu",
+    [
+      "apply",
+      "-auto-approve",
+      ...tofuVariables(),
+    ],
+    INFRA_DIR
   );
 }
 
 function tofuDestroy() {
-  safeRun(
-    `cd infra && tofu destroy -auto-approve ` +
-    `-var="project_id=${config.projectId}" ` +
-    `-var="region=${config.region}" ` +
-    `-var="frontend_bucket_name=${config.bucket}" ` +
-    `-var="cloud_function_url=dummy"`
+  console.log("\n### Removendo infraestrutura AWS ###");
+
+  tofuInit();
+
+  run(
+    "tofu",
+    [
+      "destroy",
+      "-auto-approve",
+      ...tofuVariables(),
+    ],
+    INFRA_DIR
   );
 }
 
 function tofuOutput(name) {
-  return output(`cd infra && tofu output -raw ${name}`);
+  return output(
+    "tofu",
+    ["output", "-raw", name],
+    INFRA_DIR
+  );
 }
 
 function ensureFrontendEnv(apiUrl) {
-  const envPath = path.resolve("frontend", ".env");
+  const envPath = path.resolve(FRONTEND_DIR, ".env");
 
   const content = [
     `REACT_APP_API_BASE_URL=${apiUrl}`,
-    `REACT_APP_SUPABASE_URL=${process.env.SUPABASE_URL ?? ""}`,
-    `REACT_APP_SUPABASE_ANON_KEY=${process.env.SUPABASE_ANON_KEY ?? ""}`,
+    `REACT_APP_SUPABASE_URL=${config.supabaseUrl}`,
+    `REACT_APP_SUPABASE_ANON_KEY=${config.supabaseAnonKey}`,
+    "",
   ].join("\n");
 
-  fs.writeFileSync(envPath, content);
+  fs.writeFileSync(envPath, content, "utf-8");
+
+  console.log(`Frontend configurado com API: ${apiUrl}`);
 }
 
 function frontendDeploy() {
+  console.log("\n### Implantando frontend ###");
+
   const apiUrl = tofuOutput("api_url");
   const bucketName = tofuOutput("frontend_bucket_name");
   const frontendUrl = tofuOutput("frontend_url");
+  const distributionId = tofuOutput(
+    "cloudfront_distribution_id"
+  );
 
   ensureFrontendEnv(apiUrl);
 
-  run("cd frontend && npm install");
-  run("cd frontend && npm run build");
+  run("npm", ["install"], FRONTEND_DIR);
+  run("npm", ["run", "build"], FRONTEND_DIR);
+
   run(
-    `gcloud storage rsync frontend/build gs://${bucketName} ` +
-    `--recursive --delete-unmatched-destination-objects`
+    "aws",
+    [ "s3","sync","build/",`s3://${bucketName}`,"--delete","--region", config.region    ],
+    FRONTEND_DIR
   );
+
+  run("aws", [
+    "cloudfront",
+    "create-invalidation",
+    "--distribution-id",
+    distributionId,
+    "--paths",
+    "/*",
+  ]);
 
   console.log(`Frontend publicado no bucket: ${bucketName}`);
   console.log(`Frontend URL: ${frontendUrl}`);
+  console.log(`API URL: ${apiUrl}`);
 }
 
-async function deploy() {
+function deploy() {
+  validateConfig();
+  checkAwsCredentials();
+
   backendDeploy();
   tofuApply();
   frontendDeploy();
@@ -125,44 +267,69 @@ async function deploy() {
   console.log("\nProjeto implantado com sucesso.");
 }
 
-async function remove() {
+function remove() {
+  validateConfig();
+  checkAwsCredentials();
+
+  /*
+   * A infraestrutura precisa ser removida antes da Lambda.
+   * O OpenTofu consulta a função com data.aws_lambda_function.
+   */
   tofuDestroy();
   backendRemove();
 
-  console.log("\nRecursos removidos.");
+  console.log("\nRecursos removidos com sucesso.");
 }
 
-function cls() {
-  removeDir(path.resolve("backend/.serverless"));
-  removeDir(path.resolve("backend/dist"));
-  removeDir(path.resolve("backend/node_modules"));
-  removeDir(path.resolve("frontend/build"));
-  removeDir(path.resolve("frontend/dist"));
+function clean() {
+  removeDir(path.resolve(BACKEND_DIR, ".serverless"));
+  removeDir(path.resolve(BACKEND_DIR, "node_modules"));
+  removeDir(path.resolve(BACKEND_DIR, "dist"));
 
-  console.log("\nBuild limpo com sucesso.");
+  removeDir(path.resolve(FRONTEND_DIR, "node_modules"));
+  removeDir(path.resolve(FRONTEND_DIR, "build"));
+  removeDir(path.resolve(FRONTEND_DIR, "dist"));
+
+  console.log("\nArtefatos locais removidos.");
 }
 
-const command = process.argv[2] || "help";
-
-switch (command) {
-  case "deploy":
-    await deploy();
-    break;
-
-  case "remove":
-    await remove();
-    break;
-
-  case "cls":
-    cls();
-    break;
-
-  default:
-    console.log(`
+function showHelp() {
+  console.log(`
 Comandos disponíveis:
 
   node cli.js deploy
   node cli.js remove
   node cli.js cls
 `);
+}
+
+const command = process.argv[2] || "help";
+
+try {
+  switch (command) {
+    case "deploy":
+      deploy();
+      break;
+
+    case "remove":
+      remove();
+      break;
+
+    case "cls":
+      clean();
+      break;
+
+    default:
+      showHelp();
+  }
+} catch (error) {
+  console.error("\nFalha durante a execução.");
+
+  if (error instanceof Error) {
+    console.error(error.message);
+  } else {
+    console.error(error);
+  }
+
+  process.exitCode = 1;
 }

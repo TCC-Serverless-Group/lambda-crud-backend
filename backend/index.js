@@ -1,43 +1,52 @@
 import { route } from './router.js';
 import { validateSupabaseToken } from "./validateToken.js";
 
-function applyCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Token');
+function applyCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Token',
+    'Access-Control-Allow-Methods': 'OPTIONS,DELETE,GET,HEAD,POST,PUT',
+    'Content-Type': 'application/json'
+  };
 }
 
-export const handler = async (req, res) => {
+export const handler = async (event) => {
+  const corsHeaders = applyCorsHeaders();
 
-  applyCorsHeaders(res);
-  
   try {
+    const { httpMethod, pathParameters, body, headers, path } = event;
 
-    if (req.method === "OPTIONS") {
-      return res.status(204).send("");
+    const token = headers.Token || headers.token || {};
+
+    if (httpMethod == "OPTIONS") {
+      return { statusCode: 204, headers: corsHeaders, body: "" };
     }
 
-    const token = String(req.headers.token);
-    
-    let data = validateSupabaseToken(token); // valida o token e retorna o payload do usuário, se válido
-    const userId = data?.user?.id;
-
-    const path = req.path;
+    let data = validateSupabaseToken(token);
 
     const result = await route({
-      method: req.method,
-      path: path,
-      body: req.body ? req.body : {},
-      userId: userId,
+      method: event.httpMethod,
+      path: event.path,
+      body: event.body ? JSON.parse(event.body) : {},
+      userId: data.user.id,
     });
 
-    return res.status(result.statusCode).json(JSON.stringify(result.body));
+    return {
+      statusCode: result.statusCode,
+      headers: corsHeaders,
+      body: JSON.stringify(result.body),
+    };
   } catch (err) {
-    applyCorsHeaders(res);
-    console.error(err);
-    return res.status(500).json({
-      message: err.message,
-      stack: err.stack,
-    });
+    console.error("Erro na Lambda:", err);
+
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: "Internal server error",
+        error: err.message,
+      }),
+    };
   }
+
 };

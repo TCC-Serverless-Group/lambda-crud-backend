@@ -1,24 +1,25 @@
-
 service: todolist
-frameworkVersion: '3'
+
+frameworkVersion: "3"
+
 useDotenv: true
+
 provider:
-  name: google
-  runtime: nodejs20
-  region: us-central1
-  project: ${env:GCP_PROJECT_ID}
+  name: aws
+  runtime: nodejs20.x
+  region: ${env:AWS_REGION, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
     SUPABASE_URL: ${env:SUPABASE_URL}
     SUPABASE_ANON_KEY: ${env:SUPABASE_ANON_KEY}
     SUPABASE_JWT_SECRET: ${env:SUPABASE_JWT_SECRET}
-    
+
 plugins:
-  - serverless-google-cloudfunctions
   - serverless-dotenv-plugin
 
 functions:
   api:
-    handler: handler
-    events:
-      - http: api
+    name: ${self:service}-${self:provider.stage}-api
+    handler: index.handler

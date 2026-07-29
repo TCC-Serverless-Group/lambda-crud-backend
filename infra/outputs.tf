@@ -1,11 +1,15 @@
 output "frontend_bucket_name" {
-  value = google_storage_bucket.frontend.name
+  value = aws_s3_bucket.frontend.id
 }
 
 output "api_url" {
-  value = "https://${google_api_gateway_gateway.todolist.default_hostname}"
+  value = "https://${aws_api_gateway_rest_api.todolist.id}.execute-api.${var.region}.amazonaws.com/${aws_api_gateway_stage.todolist.stage_name}"
 }
 
 output "frontend_url" {
-  value = "https://storage.googleapis.com/${google_storage_bucket.frontend.name}/index.html"
+  value = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+}
+
+output "cloudfront_distribution_id" {
+  value = aws_cloudfront_distribution.frontend.id
 }

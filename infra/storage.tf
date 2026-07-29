@@ -1,15 +1,27 @@
-resource "google_storage_bucket" "frontend" {
-  name                        = var.frontend_bucket_name
-  location                    = "US"
-  uniform_bucket_level_access = true
-  force_destroy               = true
+resource "aws_s3_bucket" "frontend" {
+  bucket        = var.frontend_bucket_name
+  force_destroy = true
 
-  website {
-    main_page_suffix = "index.html"
-    not_found_page   = "index.html"
+  tags = {
+    Application = var.service_name
+    Stage       = var.stage
+    ManagedBy   = "OpenTofu"
   }
+}
 
-  depends_on = [
-    google_project_service.storage
-  ]
+resource "aws_s3_bucket_ownership_controls" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }

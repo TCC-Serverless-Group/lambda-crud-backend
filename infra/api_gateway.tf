@@ -1,28 +1,33 @@
 locals {
   openapi_content = templatefile("${path.module}/openapi.yaml", {
-    cloud_function_url = var.cloud_function_url
+    lambda_invoke_arn = data.aws_lambda_function.api.invoke_arn
   })
 }
 
-resource "google_api_gateway_api" "todolist" {
-  provider = google-beta
-  api_id = var.api_id
+resource "aws_api_gateway_rest_api" "todolist" {
+  name        = "${var.service_name}-${var.stage}-api"
+  description = "API da aplicação TodoList"
 
-  depends_on = [
-    google_project_service.api_gateway
-  ]
+  body = local.openapi_content
+
+  put_rest_api_mode = "overwrite"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+
+  tags = {
+    Application = var.service_name
+    Stage       = var.stage
+    ManagedBy   = "OpenTofu"
+  }
 }
 
-resource "google_api_gateway_api_config" "todolist" {
-  provider = google-beta
-  api           = google_api_gateway_api.todolist.api_id
-  api_config_id = "${var.api_id}-config"
+resource "aws_api_gateway_deployment" "todolist" {
+  rest_api_id = aws_api_gateway_rest_api.todolist.id
 
-  openapi_documents {
-    document {
-      path     = "openapi.yaml"
-      contents = base64encode(local.openapi_content)
-    }
+  triggers = {
+    redeployment = sha1(local.openapi_content)
   }
 
   lifecycle {
@@ -30,14 +35,18 @@ resource "google_api_gateway_api_config" "todolist" {
   }
 
   depends_on = [
-    google_project_service.service_management,
-    google_project_service.service_control
+    aws_lambda_permission.api_gateway
   ]
 }
 
-resource "google_api_gateway_gateway" "todolist" {
-  provider = google-beta
-  gateway_id = var.gateway_id
-  api_config = google_api_gateway_api_config.todolist.id
-  region     = var.region
+resource "aws_api_gateway_stage" "todolist" {
+  rest_api_id   = aws_api_gateway_rest_api.todolist.id
+  deployment_id = aws_api_gateway_deployment.todolist.id
+  stage_name    = var.stage
+
+  tags = {
+    Application = var.service_name
+    Stage       = var.stage
+    ManagedBy   = "OpenTofu"
+  }
 }

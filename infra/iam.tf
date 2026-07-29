@@ -1,14 +1,40 @@
-resource "google_storage_bucket_iam_member" "frontend_public_read" {
-  bucket = google_storage_bucket.frontend.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
+data "aws_iam_policy_document" "frontend_bucket" {
+  statement {
+    sid    = "AllowCloudFrontRead"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.frontend.arn}/*"
+    ]
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "cloudfront.amazonaws.com"
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+
+      values = [
+        aws_cloudfront_distribution.frontend.arn
+      ]
+    }
+  }
 }
 
-resource "google_cloudfunctions_function_iam_member" "function_public_invoker" {
-  project        = var.project_id
-  region         = var.region
-  cloud_function = var.function_name
+resource "aws_s3_bucket_policy" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+  policy = data.aws_iam_policy_document.frontend_bucket.json
 
-  role   = "roles/cloudfunctions.invoker"
-  member = "allUsers"
+  depends_on = [
+    aws_s3_bucket_public_access_block.frontend
+  ]
 }

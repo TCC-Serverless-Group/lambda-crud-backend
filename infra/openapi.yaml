@@ -10,10 +10,18 @@ schemes:
 produces:
   - application/json
 
-x-google-backend:
-  address: ${cloud_function_url}
-  path_translation: APPEND_PATH_TO_ADDRESS
-  disable_auth: true
+x-amazon-apigateway-gateway-responses:
+  DEFAULT_4XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,Token'"
+      gatewayresponse.header.Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
+
+  DEFAULT_5XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,Token'"
+      gatewayresponse.header.Access-Control-Allow-Methods: "'OPTIONS,GET,POST,PUT,DELETE'"
 
 paths:
   /tasks/save:
@@ -23,11 +31,21 @@ paths:
         "204":
           description: CORS preflight
 
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
+
     post:
       operationId: postTasksSave
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
+
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
 
   /tasks/list:
     options:
@@ -36,77 +54,129 @@ paths:
         "204":
           description: CORS preflight
 
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
+
     get:
       operationId: getTasksList
       responses:
         "200":
           description: OK
 
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
+
   /tasks/get/{id}:
     options:
       operationId: optionsTasksGet
+
       parameters:
         - name: id
           in: path
           required: true
           type: string
+
       responses:
         "204":
           description: CORS preflight
 
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
+
     get:
       operationId: getTaskById
+
       parameters:
         - name: id
           in: path
           required: true
           type: string
+
       responses:
         "200":
           description: OK
+
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
 
   /tasks/put/{id}:
     options:
       operationId: optionsTasksPut
+
       parameters:
         - name: id
           in: path
           required: true
           type: string
+
       responses:
         "204":
           description: CORS preflight
 
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
+
     put:
       operationId: putTaskById
+
       parameters:
         - name: id
           in: path
           required: true
           type: string
+
       responses:
-        "200":
-          description: OK
+        "204":
+          description: Updated
+
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
 
   /tasks/delete/{id}:
     options:
       operationId: optionsTasksDelete
+
       parameters:
         - name: id
           in: path
           required: true
           type: string
+
       responses:
         "204":
           description: CORS preflight
 
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
+
     delete:
       operationId: deleteTaskById
+
       parameters:
         - name: id
           in: path
           required: true
           type: string
+
       responses:
-        "200":
-          description: OK
+        "204":
+          description: Deleted
+
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: "${lambda_invoke_arn}"
