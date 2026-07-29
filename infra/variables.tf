@@ -1,31 +1,23 @@
-variable "project_id" {
-  type = string
-}
-
 variable "region" {
   type    = string
-  default = "us-central1"
+  default = "us-east-1"
+}
+
+variable "stage" {
+  type    = string
+  default = "dev"
+}
+
+variable "service_name" {
+  type    = string
+  default = "todolist"
 }
 
 variable "frontend_bucket_name" {
   type = string
 }
 
-variable "cloud_function_url" {
-  type = string
-}
-
-variable "api_id" {
-  type    = string
-  default = "todolist-api"
-}
-
-variable "gateway_id" {
-  type    = string
-  default = "todolist-gateway"
-}
-
-variable "function_name" {
+variable "lambda_function_name" {
   type    = string
   default = "todolist-dev-api"
 }
