@@ -264,7 +264,7 @@ function deploy() {
   tofuApply();
   frontendDeploy();
 
-  console.log("\nProjeto implantado com sucesso.");
+  console.log("\nProjeto implantado com sucesso."); 
 }
 
 function remove() {

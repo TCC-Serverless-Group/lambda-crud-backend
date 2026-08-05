@@ -38,3 +38,12 @@ resource "aws_s3_bucket_policy" "frontend" {
     aws_s3_bucket_public_access_block.frontend
   ]
 }
+
+resource "aws_lambda_permission" "api_gateway" {
+  statement_id  = "AllowApiGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = data.aws_lambda_function.api.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.todolist.execution_arn}/*"
+}
