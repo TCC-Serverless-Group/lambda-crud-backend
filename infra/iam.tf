@@ -1,6 +1,6 @@
 data "aws_iam_policy_document" "frontend_bucket" {
   statement {
-    sid    = "AllowCloudFrontRead"
+    sid    = "PublicReadGetObject"
     effect = "Allow"
 
     actions = [
@@ -12,20 +12,8 @@ data "aws_iam_policy_document" "frontend_bucket" {
     ]
 
     principals {
-      type = "Service"
-
-      identifiers = [
-        "cloudfront.amazonaws.com"
-      ]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "AWS:SourceArn"
-
-      values = [
-        aws_cloudfront_distribution.frontend.arn
-      ]
+      type        = "*"
+      identifiers = ["*"]
     }
   }
 }

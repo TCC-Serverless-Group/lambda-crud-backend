@@ -227,9 +227,6 @@ function frontendDeploy() {
   const apiUrl = tofuOutput("api_url");
   const bucketName = tofuOutput("frontend_bucket_name");
   const frontendUrl = tofuOutput("frontend_url");
-  const distributionId = tofuOutput(
-    "cloudfront_distribution_id"
-  );
 
   ensureFrontendEnv(apiUrl);
 
@@ -238,18 +235,17 @@ function frontendDeploy() {
 
   run(
     "aws",
-    [ "s3","sync","build/",`s3://${bucketName}`,"--delete","--region", config.region    ],
+    [
+      "s3",
+      "sync",
+      "build/",
+      `s3://${bucketName}`,
+      "--delete",
+      "--region",
+      config.region,
+    ],
     FRONTEND_DIR
   );
-
-  run("aws", [
-    "cloudfront",
-    "create-invalidation",
-    "--distribution-id",
-    distributionId,
-    "--paths",
-    "/*",
-  ]);
 
   console.log(`Frontend publicado no bucket: ${bucketName}`);
   console.log(`Frontend URL: ${frontendUrl}`);
