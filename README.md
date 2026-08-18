@@ -51,3 +51,35 @@
 - frontend/src/SupabaseAuth.js
 - frontend/src/ProtectedRoute.js
 - frontend/src/App.js
+
+
+Arquitetura do comparador
+
+                         Git branches
+                              │
+                    ┌─────────┴─────────┐
+                    │                   │
+                 aws-arch            gcp-arch
+                    │                   │
+                    └─────────┬─────────┘
+                              │
+                         compare.py
+                              │
+                       identifica arquivo
+                              │
+          ┌───────────────────┼───────────────────┐
+          │                   │                   │
+      Terraform            OpenAPI            Serverless
+          │                   │                   │
+     storage.py          openapi.py         serverless.py
+     gateway.py
+     iam.py
+     providers.py
+          │
+          └───────────────────┬───────────────────┘
+                              │
+                         normalização
+                              │
+                       SequenceMatcher
+                              │
+                             relatório
