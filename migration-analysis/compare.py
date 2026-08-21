@@ -2,7 +2,25 @@ import argparse
 import subprocess
 from difflib import SequenceMatcher
 from pathlib import Path
-from cloud_resources import CLOUD_RESOURCE_EQUIVALENCES
+from equivalences.cli import (
+    CLI_NORMALIZATION_EQUIVALENCES,
+)
+
+from equivalences.environment import (
+    ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
+)
+
+from equivalences.openapi import (
+    OPENAPI_NORMALIZATION_EQUIVALENCES,
+)
+
+from equivalences.serverless import (
+    SERVERLESS_NORMALIZATION_EQUIVALENCES,
+)
+
+from equivalences.terraform import (
+    TERRAFORM_NORMALIZATION_EQUIVALENCES,
+)
 
 TEXT_EXTENSIONS = {
     ".js",
@@ -27,7 +45,34 @@ IGNORED_FILES = {
     "package-lock.json",
 }
 
+def get_normalization_equivalences(file_path):
 
+    if file_path.endswith(".tf"):
+        return TERRAFORM_NORMALIZATION_EQUIVALENCES.get(
+            file_path,
+            {},
+        )
+
+    if file_path == "infra/openapi.yaml":
+        return OPENAPI_NORMALIZATION_EQUIVALENCES
+
+    if file_path == "backend/serverless.yml":
+        return {
+            **SERVERLESS_NORMALIZATION_EQUIVALENCES,
+            **ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
+        }
+
+    if file_path == "cli.js":
+        return {
+            **CLI_NORMALIZATION_EQUIVALENCES,
+            **ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
+        }
+
+    if Path(file_path).name == ".env":
+        return ENVIRONMENT_NORMALIZATION_EQUIVALENCES
+
+    return {}
+    
 def git(repo_path, *args):
     """
     Executa um comando Git no repositório informado
@@ -144,31 +189,53 @@ def prepare_lines(content):
         for line in content.splitlines()
     ]
     
-def normalize_cloud_lines(lines):
+def normalize_cloud_lines(lines, file_path):
+    equivalences = get_normalization_equivalences(
+        file_path
+    )
+
     normalized_lines = []
 
     for line in lines:
         normalized_line = line
 
-        for category, equivalences in CLOUD_RESOURCE_EQUIVALENCES.items():
+        ordered_equivalences = sorted(
+            equivalences.items(),
+            key=lambda item: max(
+                len(item[0]),
+                len(item[1]),
+            ),
+            reverse=True,
+        )
 
-            for aws_resource, gcp_resource in equivalences.items():
+        for index, (
+            aws_value,
+            gcp_value,
+        ) in enumerate(
+            ordered_equivalences,
+            start=1,
+        ):
+            canonical_name = (
+                f"<MIGRATION_EQ:{index}>"
+            )
 
-                canonical_name = (
-                    f"<{category.upper()}:{aws_resource}>"
+            normalized_line = (
+                normalized_line.replace(
+                    aws_value,
+                    canonical_name,
                 )
+            )
 
-                normalized_line = normalized_line.replace(
-                    aws_resource,
-                    canonical_name
+            normalized_line = (
+                normalized_line.replace(
+                    gcp_value,
+                    canonical_name,
                 )
+            )
 
-                normalized_line = normalized_line.replace(
-                    gcp_resource,
-                    canonical_name
-                )
-
-        normalized_lines.append(normalized_line)
+        normalized_lines.append(
+            normalized_line
+        )
 
     return normalized_lines
 
@@ -301,11 +368,13 @@ def analyze_repository(
         )
 
         normalized_source_lines = normalize_cloud_lines(
-            source_lines
+            source_lines,
+            file_path,
         )
 
         normalized_target_lines = normalize_cloud_lines(
-            target_lines
+            target_lines,
+            file_path,
         )
 
         architectural_comparison = compare_file(
