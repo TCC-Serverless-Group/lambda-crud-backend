@@ -15,7 +15,7 @@ from equivalences.openapi import (
 )
 
 from equivalences.serverless import (
-    SERVERLESS_NORMALIZATION_EQUIVALENCES,
+    SERVERLESS_NORMALIZATION_EQUIVALENCES
 )
 
 from equivalences.terraform import (
@@ -58,14 +58,12 @@ def get_normalization_equivalences(file_path):
 
     if file_path == "backend/serverless.yml":
         return {
-            **SERVERLESS_NORMALIZATION_EQUIVALENCES,
-            **ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
+            **SERVERLESS_NORMALIZATION_EQUIVALENCES
         }
 
     if file_path == "cli.js":
         return {
-            **CLI_NORMALIZATION_EQUIVALENCES,
-            **ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
+            **CLI_NORMALIZATION_EQUIVALENCES
         }
 
     if Path(file_path).name == ".env":
@@ -196,17 +194,17 @@ def normalize_cloud_lines(lines, file_path):
 
     normalized_lines = []
 
+    ordered_equivalences = sorted(
+        equivalences.items(),
+        key=lambda item: max(
+            len(item[0]),
+            len(item[1]),
+        ),
+        reverse=True,
+    )
+
     for line in lines:
         normalized_line = line
-
-        ordered_equivalences = sorted(
-            equivalences.items(),
-            key=lambda item: max(
-                len(item[0]),
-                len(item[1]),
-            ),
-            reverse=True,
-        )
 
         for index, (
             aws_value,
@@ -215,30 +213,45 @@ def normalize_cloud_lines(lines, file_path):
             ordered_equivalences,
             start=1,
         ):
+
+            if (
+                not isinstance(aws_value, str)
+                or not isinstance(gcp_value, str)
+            ):
+                raise TypeError(
+                    "\nEquivalência inválida:"
+                    f"\narquivo: {file_path}"
+                    f"\naws: {aws_value!r}"
+                    f"\ngcp: {gcp_value!r}"
+                )
+
             canonical_name = (
                 f"<MIGRATION_EQ:{index}>"
             )
 
-            normalized_line = (
-                normalized_line.replace(
-                    aws_value,
-                    canonical_name,
-                )
+            normalized_line = normalized_line.replace(
+                aws_value,
+                canonical_name,
             )
 
-            normalized_line = (
-                normalized_line.replace(
-                    gcp_value,
-                    canonical_name,
-                )
+            normalized_line = normalized_line.replace(
+                gcp_value,
+                canonical_name,
             )
 
+        # ESTA LINHA PRECISA ESTAR DENTRO DO `for line`
+        # mas FORA do `for equivalence`.
         normalized_lines.append(
             normalized_line
         )
 
-    return normalized_lines
+    assert len(normalized_lines) == len(lines), (
+        f"Normalização alterou quantidade de linhas em {file_path}: "
+        f"{len(lines)} -> {len(normalized_lines)}"
+    )
 
+    return normalized_lines
+    
 def compare_file(source_lines, target_lines):
     """
     Compara as linhas de dois arquivos.

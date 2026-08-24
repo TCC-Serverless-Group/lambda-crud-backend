@@ -1,3 +1,19 @@
+# ==========================================================
+# V2 - NORMALIZAÇÃO
+# Deve ser sempre str -> str
+# ==========================================================
+
+ENVIRONMENT_NORMALIZATION_EQUIVALENCES = {
+    "AWS_REGION": "GCP_REGION",
+    "AWS_FUNCTION_NAME": "GCP_FUNCTION_NAME",
+}
+
+
+# ==========================================================
+# V3 - EQUIVALÊNCIA ARQUITETURAL
+# Não é usado por normalize_cloud_lines()
+# ==========================================================
+
 ENVIRONMENT_ARCHITECTURAL_EQUIVALENCES = {
 
     "region": {
