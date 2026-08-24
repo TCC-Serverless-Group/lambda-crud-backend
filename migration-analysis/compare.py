@@ -390,25 +390,25 @@ def analyze_repository(
             file_path,
         )
 
-        architectural_comparison = compare_file(
+        normalized_comparison = compare_file(
             normalized_source_lines,
             normalized_target_lines,
         )
 
-        comparison["architectural_reuse"] = (
-            architectural_comparison["source_reuse"]
+        comparison["normalized_reuse"] = (
+            normalized_comparison["source_reuse"]
         )
 
-        comparison["architectural_similarity"] = (
-            architectural_comparison["textual_similarity"]
+        comparison["normalized_similarity"] = (
+            normalized_comparison["textual_similarity"]
         )
 
-        comparison["architectural_identical"] = (
-            architectural_comparison["identical"]
+        comparison["normalized_identical"] = (
+            normalized_comparison["identical"]
         )
 
         comparison["cloud_equivalent"] = (
-            architectural_comparison["identical"]
+            normalized_comparison["identical"]
             - comparison["identical"]
         )
 
@@ -475,12 +475,12 @@ def print_file_report(result):
 
     print(
         f"Reuso arquitetural:          "
-        f"{result['architectural_reuse'] * 100:.2f}%"
+        f"{result['normalized_reuse'] * 100:.2f}%"
     )
 
     print(
         f"Similaridade arquitetural:   "
-        f"{result['architectural_similarity'] * 100:.2f}%"
+        f"{result['normalized_similarity'] * 100:.2f}%"
     )
 
     print(
@@ -562,13 +562,13 @@ def print_summary(
         else 1.0
     )
 
-    total_architectural_identical = sum(
-        result["architectural_identical"]
+    total_normalized_identical = sum(
+        result["normalized_identical"]
         for result in results
     )
 
-    architectural_reuse = (
-        total_architectural_identical / total_source_lines
+    normalized_reuse = (
+        total_normalized_identical / total_source_lines
         if total_source_lines
         else 1.0
     )
@@ -580,7 +580,7 @@ def print_summary(
 
     print(
         f"Linhas equivalentes cloud:"
-        f" {total_architectural_identical - total_identical}"
+        f" {total_normalized_identical - total_identical}"
     )
 
     print(
@@ -595,7 +595,7 @@ def print_summary(
 
     print(
         f"Reuso arquitetural global: "
-        f"{architectural_reuse * 100:.2f}%"
+        f"{normalized_reuse * 100:.2f}%"
     )
 
 
