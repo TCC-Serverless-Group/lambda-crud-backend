@@ -83,3 +83,12 @@ Arquitetura do comparador
                        SequenceMatcher
                               │
                              relatório
+
+
+migration-analysis/compare.py
+        ↓
+analyze_repository()
+        ↓
+compare_file()
+        ↓
+print_summary()
