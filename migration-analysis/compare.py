@@ -2,21 +2,21 @@ import argparse
 import subprocess
 from difflib import SequenceMatcher
 from pathlib import Path
-from equivalences.cli import (
-    CLI_NORMALIZATION_EQUIVALENCES,
-)
+# from equivalences.cli import (
+#     CLI_NORMALIZATION_EQUIVALENCES,
+# )
 
-from equivalences.environment import (
-    ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
-)
+# from equivalences.environment import (
+#     ENVIRONMENT_NORMALIZATION_EQUIVALENCES,
+# )
 
-from equivalences.openapi import (
-    OPENAPI_NORMALIZATION_EQUIVALENCES,
-)
+# from equivalences.openapi import (
+#     OPENAPI_NORMALIZATION_EQUIVALENCES,
+# )
 
-from equivalences.serverless import (
-    SERVERLESS_NORMALIZATION_EQUIVALENCES
-)
+# from equivalences.serverless import (
+#     SERVERLESS_NORMALIZATION_EQUIVALENCES
+# )
 
 from equivalences.terraform import (
     TERRAFORM_NORMALIZATION_EQUIVALENCES,
@@ -35,26 +35,19 @@ TEXT_EXTENSIONS = {
     ".html",
 }
 
-TEXT_FILENAMES = {
-    "index.js",
-    "package.json",
-    "serverless.yml",
-    "api_gateway.tf",
-    "iam.tf",
-    "openapi.yaml",
-    "outputs.tf",
-    "providers.tf",
-    "storage.tf",
-    "variables.tf",
-    "package.json"
+IGNORED_PATH_PREFIXES = {
+    "migration-analysis/"
 }
 
-IGNORED_PATH_PREFIXES = {
-    "migration-analysis/",
+IGNORED_REPOSITORY_FILES = {
+    "package-lock.json"
 }
 
 
 def should_include_repository_file(file_path):
+    if file_path in IGNORED_REPOSITORY_FILES:
+        return False
+
     return not any(
         file_path.startswith(prefix)
         for prefix in IGNORED_PATH_PREFIXES
@@ -62,8 +55,7 @@ def should_include_repository_file(file_path):
 
 IGNORED_FILES = {
     "README.md",
-    "backend/README.md",
-    "frontend/README.md",
+    "package.json",
     "package-lock.json",
     ".env",
     ".gitignore"
@@ -76,22 +68,6 @@ def get_normalization_equivalences(file_path):
             file_path,
             {},
         )
-
-    if file_path == "infra/openapi.yaml":
-        return OPENAPI_NORMALIZATION_EQUIVALENCES
-
-    if file_path == "backend/serverless.yml":
-        return {
-            **SERVERLESS_NORMALIZATION_EQUIVALENCES
-        }
-
-    if file_path == "cli.js":
-        return {
-            **CLI_NORMALIZATION_EQUIVALENCES
-        }
-
-    if Path(file_path).name == ".env":
-        return ENVIRONMENT_NORMALIZATION_EQUIVALENCES
 
     return {}
     
@@ -180,9 +156,6 @@ def should_analyze(file_path):
 
     if path.name in IGNORED_FILES:
         return False
-
-    if path.name in TEXT_FILENAMES:
-        return True
 
     return path.suffix.lower() in TEXT_EXTENSIONS
 
@@ -537,71 +510,6 @@ def analyze_repository(
         "changed_results": changed_results,
     }
 
-def print_file_report(result):
-    print()
-    print("=" * 70)
-    print(result["file"])
-    print("=" * 70)
-
-    print(
-        f"Linhas origem:                  "
-        f"{result['source_lines']}"
-    )
-
-    print(
-        f"Linhas destino:                 "
-        f"{result['target_lines']}"
-    )
-
-    print(
-        f"Linhas idênticas:               "
-        f"{result['identical']}"
-    )
-
-    print(
-        f"Linhas alteradas na origem:     "
-        f"{result['source_changed']}"
-    )
-
-    print(
-        f"Linhas alteradas no destino:    "
-        f"{result['target_changed']}"
-    )
-
-    print()
-
-    print(
-        f"Reuso textual da origem:        "
-        f"{result['source_reuse'] * 100:.2f}%"
-    )
-
-    print(
-        f"Correspondência no destino:     "
-        f"{result['target_reuse'] * 100:.2f}%"
-    )
-
-    print(
-        f"Similaridade textual:           "
-        f"{result['textual_similarity'] * 100:.2f}%"
-    )
-
-    print()
-
-    print(
-        f"Reuso normalizado:              "
-        f"{result['normalized_reuse'] * 100:.2f}%"
-    )
-
-    print(
-        f"Similaridade normalizada:       "
-        f"{result['normalized_similarity'] * 100:.2f}%"
-    )
-
-    print(
-        f"Ganho após normalização:        "
-        f"{result['normalization_gain']}"
-    )
-
 def is_application_file(file_path):
     # Frontend
     if file_path.startswith("frontend/"):
@@ -623,26 +531,20 @@ def is_application_file(file_path):
 
     return False
 
+
 def print_summary(
     analysis,
     source_branch,
     target_branch,
 ):
-    source_files = analysis[
-        "source_files"
-    ]
-
-    target_files = analysis[
-        "target_files"
-    ]
+    source_files = analysis["source_files"]
+    target_files = analysis["target_files"]
 
     shared_repository_files = analysis[
         "shared_repository_files"
     ]
 
-    shared_files = analysis[
-        "shared_files"
-    ]
+    shared_files = analysis["shared_files"]
 
     source_only_files = analysis[
         "source_only_files"
@@ -654,16 +556,23 @@ def print_summary(
 
     results = analysis["results"]
 
+    identical_results = analysis[
+        "identical_results"
+    ]
+
+    changed_results = analysis[
+        "changed_results"
+    ]
+
+    # ==========================================================
+    # APLICAÇÃO + CONFIGURAÇÃO DE EXECUÇÃO
+    # ==========================================================
+
     application_results = [
         result
         for result in results
-        if (
-            (
-                result["file"].startswith("frontend/")
-                or result["file"].startswith("backend/")
-            )
-            and not result["file"].endswith("README.md")
-            and not result["file"].endswith(".gitignore")
+        if is_application_file(
+            result["file"]
         )
     ]
 
@@ -688,6 +597,52 @@ def print_summary(
         if application_source_lines
         else 1.0
     )
+
+    # ==========================================================
+    # INFRAESTRUTURA TERRAFORM
+    # ==========================================================
+
+    terraform_results = [
+        result
+        for result in results
+        if result["file"].endswith(".tf")
+    ]
+
+    terraform_source_lines = sum(
+        result["source_lines"]
+        for result in terraform_results
+    )
+
+    terraform_target_lines = sum(
+        result["target_lines"]
+        for result in terraform_results
+    )
+
+    terraform_identical_lines = sum(
+        result["identical"]
+        for result in terraform_results
+    )
+
+    terraform_normalized_lines = sum(
+        result["normalized_identical"]
+        for result in terraform_results
+    )
+
+    terraform_normalization_gain = (
+        terraform_normalized_lines
+        - terraform_identical_lines
+    )
+
+    terraform_reuse = (
+        terraform_normalized_lines
+        / terraform_source_lines
+        if terraform_source_lines
+        else 1.0
+    )
+
+    # ==========================================================
+    # CABEÇALHO
+    # ==========================================================
 
     print()
     print("=" * 70)
@@ -727,7 +682,7 @@ def print_summary(
     )
 
     print(
-        f"Arquivos analisados pela comparação:  "
+        f"Arquivos analisados pela comparação: "
         f"{len(shared_files)}"
     )
 
@@ -772,51 +727,15 @@ def print_summary(
         return
 
     # ==========================================================
-    # TOTAIS
+    # REUTILIZAÇÃO DA APLICAÇÃO
     # ==========================================================
-
-    total_source_lines = sum(
-        result["source_lines"]
-        for result in results
-    )
-
-    total_target_lines = sum(
-        result["target_lines"]
-        for result in results
-    )
-
-    total_identical = sum(
-        result["identical"]
-        for result in results
-    )
-
-    total_normalized_identical = sum(
-        result["normalized_identical"]
-        for result in results
-    )
-
-    normalization_gain = (
-        total_normalized_identical
-        - total_identical
-    )
-
-    source_reuse = (
-        total_identical
-        / total_source_lines
-        if total_source_lines
-        else 1.0
-    )
-
-    target_reuse = (
-        total_identical
-        / total_target_lines
-        if total_target_lines
-        else 1.0
-    )
 
     print()
     print("-" * 70)
-    print("REUTILIZAÇÃO DA APLICAÇÃO + CONFIGURAÇÃO DE EXECUÇÃO")
+    print(
+        "REUTILIZAÇÃO DA APLICAÇÃO "
+        "+ CONFIGURAÇÃO DE EXECUÇÃO"
+    )
     print("-" * 70)
 
     print(
@@ -835,51 +754,65 @@ def print_summary(
     )
 
     print(
+        f"Linhas não reutilizadas:         "
+        f"{application_source_lines - application_identical_lines}"
+    )
+
+    print(
         f"Reutilização:                    "
         f"{application_reuse * 100:.2f}%"
     )
 
-    normalized_reuse = (
-        total_normalized_identical
-        / total_source_lines
-        if total_source_lines
-        else 1.0
-    )
-
-    normalized_target_reuse = (
-        total_normalized_identical
-        / total_target_lines
-        if total_target_lines
-        else 1.0
-    )
-
-    identical_results = analysis["identical_results"]
-    changed_results = analysis["changed_results"]
+    # ==========================================================
+    # REUTILIZAÇÃO DA INFRAESTRUTURA
+    # ==========================================================
 
     print()
     print("-" * 70)
-    print("REUSO APÓS NORMALIZAÇÃO DE PROVEDOR")
+    print(
+        "REUTILIZAÇÃO DAS DEFINIÇÕES "
+        "DE INFRAESTRUTURA"
+    )
     print("-" * 70)
 
     print(
-        f"Linhas correspondentes após "
-        f"normalização: {total_normalized_identical}"
+        f"Linhas Terraform na origem:      "
+        f"{terraform_source_lines}"
+    )
+
+    print(
+        f"Linhas Terraform no destino:     "
+        f"{terraform_target_lines}"
+    )
+
+    print(
+        f"Correspondências diretas:        "
+        f"{terraform_identical_lines}"
+    )
+
+    print(
+        f"Correspondências normalizadas:   "
+        f"{terraform_normalized_lines}"
     )
 
     print(
         f"Ganho após normalização:         "
-        f"{normalization_gain}"
+        f"{terraform_normalization_gain}"
     )
 
     print(
-        f"Reuso normalizado da origem:     "
-        f"{normalized_reuse * 100:.2f}%"
+        f"Reutilização da infraestrutura:  "
+        f"{terraform_reuse * 100:.2f}%"
     )
 
-    print(
-        f"Correspondência normalizada "
-        f"destino: {normalized_target_reuse * 100:.2f}%"
-    )
+    # ==========================================================
+    # RESUMO DOS ARQUIVOS
+    # ==========================================================
+
+    print()
+    print("-" * 70)
+    print("RESUMO DOS ARQUIVOS ANALISADOS")
+    print("-" * 70)
 
     print(
         f"Arquivos integralmente preservados: "
@@ -934,14 +867,6 @@ def main():
         args.source,
         args.target,
     )
-
-    print()
-    print("=" * 70)
-    print("RESULTADO POR ARQUIVO")
-    print("=" * 70)
-
-    for result in analysis["changed_results"]:
-        print_file_report(result)
 
 
 if __name__ == "__main__":

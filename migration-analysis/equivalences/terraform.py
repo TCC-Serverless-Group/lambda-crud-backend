@@ -62,11 +62,6 @@ TERRAFORM_NORMALIZATION_EQUIVALENCES = {
 
     # ==========================================================
     # IAM
-    # Somente normalizações suficientemente fortes.
-    #
-    # Não normalizamos aws_lambda_permission <->
-    # google_cloudfunctions_function_iam_member aqui porque
-    # a política de segurança das implementações é diferente.
     # ==========================================================
     "infra/iam.tf": {
 
@@ -117,32 +112,7 @@ TERRAFORM_NORMALIZATION_EQUIVALENCES = {
             'variable "function_name"',
 
         # Região default específica do provider.
-        #
-        # Como esta regra só é aplicada a variables.tf,
-        # não afeta outras ocorrências dessas regiões.
         '"us-east-1"':
             '"us-central1"',
     },
-
-
-    # ==========================================================
-    # DATA
-    #
-    # Existe na AWS, mas não há infra/data.tf correspondente
-    # na branch GCP atual.
-    #
-    # Mantido explícito apenas para documentar a situação.
-    # O compare.py atual não chegará a utilizá-lo porque trabalha
-    # somente com arquivos compartilhados.
-    # ==========================================================
-    "infra/data.tf": {},
-
-
-    # ==========================================================
-    # GCP APIS
-    #
-    # Existe somente na branch GCP.
-    # Não possui arquivo de mesmo caminho na AWS.
-    # ==========================================================
-    "infra/apis.tf": {},
 }
