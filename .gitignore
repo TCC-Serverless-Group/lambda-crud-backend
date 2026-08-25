@@ -8,3 +8,6 @@ infra/.terraform.lock.hcl
 infra/.terraform/
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
+-tree -r --name-only aws-arch
+migration-analysis/__pycache__/
+migration-analysis/equivalences/__pycache__/
