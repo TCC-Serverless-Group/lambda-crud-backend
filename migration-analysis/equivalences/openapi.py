@@ -2,7 +2,7 @@ OPENAPI_NORMALIZATION_EQUIVALENCES = {
     "lambda_invoke_arn": "cloud_function_url",
 }
 
-OPENAPI_arch_EQUIVALENCES = {
+OPENAPI_ARCHITECTURAL_EQUIVALENCES = {
 
     "backend_integration": {
         "aws": [

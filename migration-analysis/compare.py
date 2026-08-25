@@ -31,18 +31,42 @@ TEXT_EXTENSIONS = {
     ".yaml",
     ".yml",
     ".tf",
-    ".md",
     ".css",
     ".html",
 }
 
 TEXT_FILENAMES = {
-    ".env",
-    ".gitignore",
+    "index.js",
+    "package.json",
+    "serverless.yml",
+    "api_gateway.tf",
+    "iam.tf",
+    "openapi.yaml",
+    "outputs.tf",
+    "providers.tf",
+    "storage.tf",
+    "variables.tf",
+    "package.json"
 }
 
+IGNORED_PATH_PREFIXES = {
+    "migration-analysis/",
+}
+
+
+def should_include_repository_file(file_path):
+    return not any(
+        file_path.startswith(prefix)
+        for prefix in IGNORED_PATH_PREFIXES
+    )
+
 IGNORED_FILES = {
+    "README.md",
+    "backend/README.md",
+    "frontend/README.md",
     "package-lock.json",
+    ".env",
+    ".gitignore"
 }
 
 def get_normalization_equivalences(file_path):
@@ -239,8 +263,6 @@ def normalize_cloud_lines(lines, file_path):
                 canonical_name,
             )
 
-        # ESTA LINHA PRECISA ESTAR DENTRO DO `for line`
-        # mas FORA do `for equivalence`.
         normalized_lines.append(
             normalized_line
         )
@@ -339,27 +361,56 @@ def analyze_repository(
     target_branch,
 ):
     """
-    Analisa somente arquivos presentes nas duas branches.
+    Analisa arquivos compartilhados entre as branches
+    e identifica arquivos exclusivos da origem e destino.
     """
-    source_files = get_files(
-        repo_path,
-        source_branch,
+
+    source_files = {
+        file_path
+        for file_path in get_files(
+            repo_path,
+            source_branch,
+        )
+        if should_include_repository_file(file_path)
+    }
+
+    target_files = {
+        file_path
+        for file_path in get_files(
+            repo_path,
+            target_branch,
+        )
+        if should_include_repository_file(file_path)
+    }
+
+    # Arquivos existentes nas duas branches.
+    shared_repository_files = (
+        source_files & target_files
     )
 
-    target_files = get_files(
-        repo_path,
-        target_branch,
+    # Arquivos que existiam na origem,
+    # mas não existem no destino.
+    source_only_files = sorted(
+        source_files - target_files
     )
 
+    # Arquivos criados no destino.
+    target_only_files = sorted(
+        target_files - source_files
+    )
+
+    # Somente arquivos textuais/analisáveis
+    # entram na comparação V1/V2.
     shared_files = sorted(
         file_path
-        for file_path in source_files & target_files
+        for file_path in shared_repository_files
         if should_analyze(file_path)
     )
 
     results = []
 
     for file_path in shared_files:
+
         source_content = get_file_content(
             repo_path,
             source_branch,
@@ -372,22 +423,39 @@ def analyze_repository(
             file_path,
         )
 
-        source_lines = prepare_lines(source_content)
-        target_lines = prepare_lines(target_content)
+        source_lines = prepare_lines(
+            source_content
+        )
+
+        target_lines = prepare_lines(
+            target_content
+        )
+
+        # ======================================================
+        # COMPARAÇÃO TEXTUAL
+        # ======================================================
 
         comparison = compare_file(
             source_lines,
             target_lines,
         )
 
-        normalized_source_lines = normalize_cloud_lines(
-            source_lines,
-            file_path,
+        # ======================================================
+        # COMPARAÇÃO NORMALIZADA
+        # ======================================================
+
+        normalized_source_lines = (
+            normalize_cloud_lines(
+                source_lines,
+                file_path,
+            )
         )
 
-        normalized_target_lines = normalize_cloud_lines(
-            target_lines,
-            file_path,
+        normalized_target_lines = (
+            normalize_cloud_lines(
+                target_lines,
+                file_path,
+            )
         )
 
         normalized_comparison = compare_file(
@@ -396,144 +464,316 @@ def analyze_repository(
         )
 
         comparison["normalized_reuse"] = (
-            normalized_comparison["source_reuse"]
+            normalized_comparison[
+                "source_reuse"
+            ]
         )
 
         comparison["normalized_similarity"] = (
-            normalized_comparison["textual_similarity"]
+            normalized_comparison[
+                "textual_similarity"
+            ]
         )
 
         comparison["normalized_identical"] = (
-            normalized_comparison["identical"]
+            normalized_comparison[
+                "identical"
+            ]
         )
 
-        comparison["cloud_equivalent"] = (
-            normalized_comparison["identical"]
+        comparison["normalization_gain"] = (
+            normalized_comparison[
+                "identical"
+            ]
             - comparison["identical"]
         )
 
         comparison["file"] = file_path
 
-        results.append(comparison)
+        results.append(
+            comparison
+        )
+
+    # Arquivos 100% preservados
+    identical_results = [
+        result
+        for result in results
+            if (
+                result["source_lines"]
+                == result["target_lines"]
+                == result["identical"]
+            )
+    ]
+
+
+    # Arquivos que sofreram alguma alteração
+    changed_results = [
+        result
+        for result in results
+            if not (
+                result["source_lines"]
+                == result["target_lines"]
+                == result["identical"]
+            )
+    ]
+
 
     return {
         "source_files": source_files,
         "target_files": target_files,
         "shared_files": shared_files,
+
+        "shared_repository_files": shared_repository_files,
+
+        "shared_files": shared_files,
+
+        "source_only_files":source_only_files,
+
+        "target_only_files": target_only_files,
+
         "results": results,
+
+        "identical_results": identical_results,
+        "changed_results": changed_results,
     }
 
-
 def print_file_report(result):
-    """
-    Exibe o resultado individual de um arquivo.
-    """
     print()
     print("=" * 70)
     print(result["file"])
     print("=" * 70)
 
     print(
-        f"Linhas origem:               "
+        f"Linhas origem:                  "
         f"{result['source_lines']}"
     )
 
     print(
-        f"Linhas destino:              "
+        f"Linhas destino:                 "
         f"{result['target_lines']}"
     )
 
     print(
-        f"Linhas idênticas:            "
+        f"Linhas idênticas:               "
         f"{result['identical']}"
     )
 
     print(
-        f"Linhas alteradas na origem:  "
+        f"Linhas alteradas na origem:     "
         f"{result['source_changed']}"
     )
 
     print(
-        f"Linhas alteradas no destino: "
+        f"Linhas alteradas no destino:    "
         f"{result['target_changed']}"
     )
 
+    print()
+
     print(
-        f"Reuso da origem:             "
+        f"Reuso textual da origem:        "
         f"{result['source_reuse'] * 100:.2f}%"
     )
 
     print(
-        f"Correspondência no destino:  "
+        f"Correspondência no destino:     "
         f"{result['target_reuse'] * 100:.2f}%"
     )
 
     print(
-        f"Similaridade textual:        "
+        f"Similaridade textual:           "
         f"{result['textual_similarity'] * 100:.2f}%"
     )
 
+    print()
+
     print(
-        f"Reuso arquitetural:          "
+        f"Reuso normalizado:              "
         f"{result['normalized_reuse'] * 100:.2f}%"
     )
 
     print(
-        f"Similaridade arquitetural:   "
+        f"Similaridade normalizada:       "
         f"{result['normalized_similarity'] * 100:.2f}%"
     )
 
     print(
-        f"Linhas equivalentes cloud:    "
-        f"{result['cloud_equivalent']}"
+        f"Ganho após normalização:        "
+        f"{result['normalization_gain']}"
     )
-    
 
+def is_application_file(file_path):
+    # Frontend
+    if file_path.startswith("frontend/"):
+        return not (
+            file_path.endswith("README.md")
+            or file_path.endswith(".gitignore")
+        )
+
+    # Backend
+    if file_path.startswith("backend/"):
+        excluded_files = {
+            "backend/README.md",
+            "backend/.gitignore",
+            "backend/backup_env",
+            "backend/task.sql",
+        }
+
+        return file_path not in excluded_files
+
+    return False
 
 def print_summary(
     analysis,
     source_branch,
     target_branch,
 ):
-    """
-    Exibe o resumo geral da comparação.
-    """
-    source_files = analysis["source_files"]
-    target_files = analysis["target_files"]
-    shared_files = analysis["shared_files"]
+    source_files = analysis[
+        "source_files"
+    ]
+
+    target_files = analysis[
+        "target_files"
+    ]
+
+    shared_repository_files = analysis[
+        "shared_repository_files"
+    ]
+
+    shared_files = analysis[
+        "shared_files"
+    ]
+
+    source_only_files = analysis[
+        "source_only_files"
+    ]
+
+    target_only_files = analysis[
+        "target_only_files"
+    ]
+
     results = analysis["results"]
+
+    application_results = [
+        result
+        for result in results
+        if (
+            (
+                result["file"].startswith("frontend/")
+                or result["file"].startswith("backend/")
+            )
+            and not result["file"].endswith("README.md")
+            and not result["file"].endswith(".gitignore")
+        )
+    ]
+
+    application_source_lines = sum(
+        result["source_lines"]
+        for result in application_results
+    )
+
+    application_target_lines = sum(
+        result["target_lines"]
+        for result in application_results
+    )
+
+    application_identical_lines = sum(
+        result["identical"]
+        for result in application_results
+    )
+
+    application_reuse = (
+        application_identical_lines
+        / application_source_lines
+        if application_source_lines
+        else 1.0
+    )
 
     print()
     print("=" * 70)
     print("COMPARAÇÃO ENTRE BRANCHES")
     print("=" * 70)
 
-    print(f"Origem:  {source_branch}")
-    print(f"Destino: {target_branch}")
-    print()
+    print(
+        f"Origem:  {source_branch}"
+    )
 
     print(
-        f"Arquivos na origem:       "
+        f"Destino: {target_branch}"
+    )
+
+    # ==========================================================
+    # ESTRUTURA DOS REPOSITÓRIOS
+    # ==========================================================
+
+    print()
+    print("-" * 70)
+    print("ESTRUTURA DOS REPOSITÓRIOS")
+    print("-" * 70)
+
+    print(
+        f"Arquivos na origem:              "
         f"{len(source_files)}"
     )
 
     print(
-        f"Arquivos no destino:      "
+        f"Arquivos no destino:             "
         f"{len(target_files)}"
     )
 
     print(
-        f"Arquivos compartilhados:  "
-        f"{len(source_files & target_files)}"
+        f"Arquivos compartilhados:         "
+        f"{len(shared_repository_files)}"
     )
 
     print(
-        f"Arquivos analisados:      "
+        f"Arquivos analisados pela comparação:  "
         f"{len(shared_files)}"
     )
 
+    print(
+        f"Somente na origem:               "
+        f"{len(source_only_files)}"
+    )
+
+    print(
+        f"Criados no destino:              "
+        f"{len(target_only_files)}"
+    )
+
+    # ==========================================================
+    # ARQUIVOS EXCLUSIVOS
+    # ==========================================================
+
+    if source_only_files:
+        print()
+        print(
+            "Arquivos presentes somente "
+            "na origem:"
+        )
+
+        for file_path in source_only_files:
+            print(
+                f"  - {file_path}"
+            )
+
+    if target_only_files:
+        print()
+        print(
+            "Arquivos criados no destino:"
+        )
+
+        for file_path in target_only_files:
+            print(
+                f"  + {file_path}"
+            )
+
     if not results:
         return
+
+    # ==========================================================
+    # TOTAIS
+    # ==========================================================
 
     total_source_lines = sum(
         result["source_lines"]
@@ -550,54 +790,106 @@ def print_summary(
         for result in results
     )
 
-    source_reuse = (
-        total_identical / total_source_lines
-        if total_source_lines
-        else 1.0
-    )
-    
-    target_reuse = (
-        total_identical / total_target_lines
-        if total_target_lines
-        else 1.0
-    )
-
     total_normalized_identical = sum(
         result["normalized_identical"]
         for result in results
     )
 
-    normalized_reuse = (
-        total_normalized_identical / total_source_lines
+    normalization_gain = (
+        total_normalized_identical
+        - total_identical
+    )
+
+    source_reuse = (
+        total_identical
+        / total_source_lines
         if total_source_lines
         else 1.0
     )
 
+    target_reuse = (
+        total_identical
+        / total_target_lines
+        if total_target_lines
+        else 1.0
+    )
+
     print()
-    print(f"Linhas origem:            {total_source_lines}")
-    print(f"Linhas destino:           {total_target_lines}")
-    print(f"Linhas idênticas:         {total_identical}")
+    print("-" * 70)
+    print("REUTILIZAÇÃO DA APLICAÇÃO + CONFIGURAÇÃO DE EXECUÇÃO")
+    print("-" * 70)
 
     print(
-        f"Linhas equivalentes cloud:"
-        f" {total_normalized_identical - total_identical}"
+        f"Linhas origem:                   "
+        f"{application_source_lines}"
     )
 
     print(
-        f"Reuso global da origem:   "
-        f"{source_reuse * 100:.2f}%"
+        f"Linhas destino:                  "
+        f"{application_target_lines}"
     )
 
     print(
-        f"Correspondência destino:  "
-        f"{target_reuse * 100:.2f}%"
+        f"Linhas reutilizadas:             "
+        f"{application_identical_lines}"
     )
 
     print(
-        f"Reuso arquitetural global: "
+        f"Reutilização:                    "
+        f"{application_reuse * 100:.2f}%"
+    )
+
+    normalized_reuse = (
+        total_normalized_identical
+        / total_source_lines
+        if total_source_lines
+        else 1.0
+    )
+
+    normalized_target_reuse = (
+        total_normalized_identical
+        / total_target_lines
+        if total_target_lines
+        else 1.0
+    )
+
+    identical_results = analysis["identical_results"]
+    changed_results = analysis["changed_results"]
+
+    print()
+    print("-" * 70)
+    print("REUSO APÓS NORMALIZAÇÃO DE PROVEDOR")
+    print("-" * 70)
+
+    print(
+        f"Linhas correspondentes após "
+        f"normalização: {total_normalized_identical}"
+    )
+
+    print(
+        f"Ganho após normalização:         "
+        f"{normalization_gain}"
+    )
+
+    print(
+        f"Reuso normalizado da origem:     "
         f"{normalized_reuse * 100:.2f}%"
     )
 
+    print(
+        f"Correspondência normalizada "
+        f"destino: {normalized_target_reuse * 100:.2f}%"
+    )
+
+    print(
+        f"Arquivos integralmente preservados: "
+        f"{len(identical_results)}"
+    )
+
+    print(
+        f"Arquivos com alterações:             "
+        f"{len(changed_results)}"
+    )
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -643,12 +935,13 @@ def main():
         args.target,
     )
 
+    print()
+    print("=" * 70)
+    print("RESULTADO POR ARQUIVO")
+    print("=" * 70)
 
-    for result in analysis["results"]:
-        if result["file"] == "infra/storage.tf":
-            print_file_report(result)
-   # for result in analysis["results"]:
-   #     print_file_report(result)
+    for result in analysis["changed_results"]:
+        print_file_report(result)
 
 
 if __name__ == "__main__":
