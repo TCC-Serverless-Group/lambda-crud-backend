@@ -30,6 +30,18 @@ TERRAFORM_NORMALIZATION_EQUIVALENCES = {
     # ==========================================================
     "infra/api_gateway.tf": {
 
+        # Variável entregue ao template OpenAPI
+        "lambda_invoke_arn = data.aws_lambda_function.api.invoke_arn":
+            "cloud_function_url = var.cloud_function_url",
+
+        # API Config / Deployment associado à API
+        "rest_api_id = aws_api_gateway_rest_api.todolist.id":
+            "api           = google_api_gateway_api.todolist.api_id",
+
+        # Configuração publicada pelo Stage/Gateway
+        "deployment_id = aws_api_gateway_deployment.todolist.id":
+            "api_config = google_api_gateway_api_config.todolist.id",
+
         # Referência usada para preencher o OpenAPI
         "lambda_invoke_arn":
             "cloud_function_url",
@@ -76,9 +88,14 @@ TERRAFORM_NORMALIZATION_EQUIVALENCES = {
     # ==========================================================
     "infra/outputs.tf": {
 
-        # Nome/identificador do bucket exposto como output
         "aws_s3_bucket.frontend.id":
             "google_storage_bucket.frontend.name",
+
+        'value = "https://${aws_api_gateway_rest_api.todolist.id}.execute-api.${var.region}.amazonaws.com/${aws_api_gateway_stage.todolist.stage_name}"':
+            'value = "https://${google_api_gateway_gateway.todolist.default_hostname}"',
+
+        'value = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"':
+            'value = "https://storage.googleapis.com/${google_storage_bucket.frontend.name}/index.html"',
     },
 
 

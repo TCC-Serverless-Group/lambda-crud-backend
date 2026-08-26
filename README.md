@@ -78,17 +78,8 @@ Arquitetura do comparador
           │
           └───────────────────┬───────────────────┘
                               │
-                         normalização
+                  mapeamento de equivalencias
                               │
                        SequenceMatcher
                               │
-                             relatório
-
-
-migration-analysis/compare.py
-        ↓
-analyze_repository()
-        ↓
-compare_file()
-        ↓
-print_summary()
+                         relatório

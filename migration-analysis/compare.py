@@ -791,7 +791,7 @@ def print_summary(
     )
 
     print(
-        f"Correspondências normalizadas:   "
+        f"Correspondências após mapeamento de equivalências:   "
         f"{terraform_normalized_lines}"
     )
 
