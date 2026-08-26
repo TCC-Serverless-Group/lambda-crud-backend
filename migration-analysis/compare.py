@@ -58,7 +58,8 @@ IGNORED_FILES = {
     "package.json",
     "package-lock.json",
     ".env",
-    ".gitignore"
+    ".gitignore",
+    "cli.js"
 }
 
 def get_normalization_equivalences(file_path):
@@ -628,7 +629,7 @@ def print_summary(
         for result in terraform_results
     )
 
-    terraform_normalization_gain = (
+    terraform_equivalent_adapted_lines = (
         terraform_normalized_lines
         - terraform_identical_lines
     )
@@ -638,6 +639,64 @@ def print_summary(
         / terraform_source_lines
         if terraform_source_lines
         else 1.0
+    )
+
+    # ==========================================================
+    # ADAPTAÇÃO DA INFRAESTRUTURA
+    # ==========================================================
+
+    # Linhas que precisaram ser alteradas,
+    # mas possuem equivalência direta entre provedores.
+    terraform_equivalent_adapted_lines = (
+        terraform_normalized_lines
+        - terraform_identical_lines
+    )
+
+    # Linhas da origem que não foram preservadas literalmente.
+    terraform_changed_lines = (
+        terraform_source_lines
+        - terraform_identical_lines
+    )
+
+    # Linhas que não encontraram correspondência
+    # mesmo após o mapeamento de equivalências.
+    terraform_unmatched_lines = (
+        terraform_source_lines
+        - terraform_normalized_lines
+    )
+
+    # Percentual preservado sem alteração.
+    terraform_direct_preservation = (
+        terraform_identical_lines
+        / terraform_source_lines
+        if terraform_source_lines
+        else 1.0
+    )
+
+    # Percentual que exigiu alteração,
+    # mas corresponde a uma equivalência de provedor.
+    terraform_equivalent_adaptation = (
+        terraform_equivalent_adapted_lines
+        / terraform_source_lines
+        if terraform_source_lines
+        else 0.0
+    )
+
+    # Percentual sem correspondência após equivalências.
+    terraform_unmatched_rate = (
+        terraform_unmatched_lines
+        / terraform_source_lines
+        if terraform_source_lines
+        else 0.0
+    )
+
+    # Percentual total da infraestrutura de origem
+    # que precisou sofrer alguma alteração.
+    terraform_adaptation_rate = (
+        terraform_changed_lines
+        / terraform_source_lines
+        if terraform_source_lines
+        else 0.0
     )
 
     # ==========================================================
@@ -776,33 +835,45 @@ def print_summary(
     print("-" * 70)
 
     print(
-        f"Linhas Terraform na origem:      "
+        f"Linhas Terraform na origem:             "
         f"{terraform_source_lines}"
     )
 
     print(
-        f"Linhas Terraform no destino:     "
+        f"Linhas Terraform no destino:            "
         f"{terraform_target_lines}"
     )
 
+    print()
+
     print(
-        f"Correspondências diretas:        "
-        f"{terraform_identical_lines}"
+        f"Preservadas diretamente:                 "
+        f"{terraform_identical_lines} "
+        f"({terraform_direct_preservation * 100:.2f}%)"
     )
 
     print(
-        f"Correspondências após mapeamento de equivalências:   "
-        f"{terraform_normalized_lines}"
+        f"Adaptadas por equivalência de provedor:  "
+        f"{terraform_equivalent_adapted_lines} "
+        f"({terraform_equivalent_adaptation * 100:.2f}%)"
     )
 
     print(
-        f"Ganho após normalização:         "
-        f"{terraform_normalization_gain}"
+        f"Sem correspondência após equivalências:  "
+        f"{terraform_unmatched_lines} "
+        f"({terraform_unmatched_rate * 100:.2f}%)"
     )
 
+    print()
+
     print(
-        f"Reutilização da infraestrutura:  "
+        f"Reutilização após equivalências:         "
         f"{terraform_reuse * 100:.2f}%"
+    )
+
+    print(
+        f"Taxa de adaptação da infraestrutura:     "
+        f"{terraform_adaptation_rate * 100:.2f}%"
     )
 
     # ==========================================================
