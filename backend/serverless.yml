@@ -1,15 +1,12 @@
+
 service: todolist
-
 frameworkVersion: "3"
-
 useDotenv: true
-
 provider:
   name: aws
   runtime: nodejs20.x
   region: ${env:AWS_REGION, 'us-east-1'}
   stage: ${opt:stage, 'dev'}
-
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
     SUPABASE_URL: ${env:SUPABASE_URL}
@@ -18,7 +15,7 @@ provider:
 
 plugins:
   - serverless-dotenv-plugin
-
+  
 functions:
   api:
     name: ${self:service}-${self:provider.stage}-api
